@@ -63,29 +63,53 @@
   <p>Toca un color de la izquierda y luego su pareja a la derecha</p>
 
   <div class="panel">
-    <!-- Lado Izquierdo -->
-    <div class="col">
-      <button class="btn rojo" onclick="pick('rojo', this)"></button>
-      <button class="btn azul" onclick="pick('azul', this)"></button>
-      <button class="btn amarillo" onclick="pick('amarillo', this)"></button>
-      <button class="btn verde" onclick="pick('verde', this)"></button>
-    </div>
+    <!-- Columna izquierda generada dinámicamente -->
+    <div class="col" id="col-left"></div>
 
-    <!-- Lado Derecho (desordenado) -->
-    <div class="col">
-      <button class="btn azul" onclick="match('azul', this)"></button>
-      <button class="btn rojo" onclick="match('rojo', this)"></button>
-      <button class="btn verde" onclick="match('verde', this)"></button>
-      <button class="btn amarillo" onclick="match('amarillo', this)"></button>
-    </div>
+    <!-- Columna derecha generada dinámicamente -->
+    <div class="col" id="col-right"></div>
   </div>
 
   <div id="msg"></div>
 
   <script>
+    const COLORS = ['rojo', 'azul', 'amarillo', 'verde'];
+
+    // Algoritmo para barajar arrays aleatoriamente
+    function shuffle(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    const colLeft = document.getElementById('col-left');
+    const colRight = document.getElementById('col-right');
+
+    const leftColors = shuffle(COLORS);
+    const rightColors = shuffle(COLORS);
+
     let current = null;
     let currentElem = null;
     let completed = 0;
+
+    // Renderizar botones izquierdos
+    leftColors.forEach(color => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${color}`;
+      btn.onclick = () => pick(color, btn);
+      colLeft.appendChild(btn);
+    });
+
+    // Renderizar botones derechos
+    rightColors.forEach(color => {
+      const btn = document.createElement('button');
+      btn.className = `btn ${color}`;
+      btn.onclick = () => match(color, btn);
+      colRight.appendChild(btn);
+    });
 
     function pick(color, el) {
       if (currentElem) currentElem.classList.remove('selected');
@@ -104,7 +128,7 @@
         currentElem = null;
         completed++;
         
-        if (completed === 4) {
+        if (completed === COLORS.length) {
           document.getElementById('msg').innerText = '¡TAREA COMPLETADA!';
           if (navigator.vibrate) navigator.vibrate(200);
         }
