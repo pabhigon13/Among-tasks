@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Control - Admin Among Us</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 2rem; margin: 0; }
+    h1 { color: #f59e0b; }
+    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; max-width: 400px; margin: 1.5rem auto; padding: 1.5rem; }
+    .counter { font-size: 3rem; font-weight: bold; color: #22c55e; margin: 0.5rem 0; }
+    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; }
+    li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.6rem 1rem; border-radius: 6px; display: flex; justify-content: space-between; }
+    .btn-reset { background: #ef4444; color: white; border: none; padding: 1rem 1.5rem; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; }
+    .btn-reset:hover { background: #dc2626; }
+  </style>
+</head>
+<body>
+
+  <h1>CONTROL DE MISIONES</h1>
+  
+  <div class="card">
+    <h2>⚡ Electricidad: Cables</h2>
+    <div id="count" class="counter">0</div>
+    <p style="color: #94a3b8;">Jugadores que la han completado:</p>
+    <ul id="playerList"></ul>
+
+    <button class="btn-reset" onclick="resetTask()">REINICIAR TAREA PARA TODOS</button>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function loadStats() {
+      const { data } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('task_name', 'cables')
+        .order('completed_at', { ascending: false });
+
+      if (data) {
+        document.getElementById('count').innerText = data.length;
+        const list = document.getElementById('playerList');
+        list.innerHTML = '';
+        data.forEach(item => {
+          const li = document.createElement('li');
+          const hora = new Date(item.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          li.innerHTML = `<span>👤 ${item.player_name}</span><span style="color:#94a3b8;">${hora}</span>`;
+          list.appendChild(li);
+        });
+      }
+    }
+
+    async function resetTask() {
+      if (!confirm('¿Seguro que quieres reiniciar la tarea de cables para todos?')) return;
+      await client.from('completed_tasks').delete().eq('task_name', 'cables');
+      loadStats();
+    }
+
+    loadStats();
+    setInterval(loadStats, 3000);
+  </script>
+</body>
+</html>
