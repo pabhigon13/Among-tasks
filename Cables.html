@@ -3,13 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Tarea: Conectar Cables</title>
+  <title>Electricidad: Reparar Cableado</title>
   <style>
-    * { box-sizing: border-box; touch-action: manipulation; }
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
     body {
-      background: #121216;
+      background: #0f1117;
       color: #fff;
-      font-family: Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
       padding: 1rem;
@@ -18,126 +23,272 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
-    h2 { margin-bottom: 0.5rem; color: #f59e0b; }
-    p { margin-top: 0; color: #aaa; font-size: 0.9rem; }
+    h2 {
+      margin: 0 0 0.3rem 0;
+      color: #f59e0b;
+      letter-spacing: 2px;
+      font-size: 1.4rem;
+    }
+    p {
+      margin: 0 0 1.2rem 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
     .panel {
-      background: #23272e;
-      border: 3px solid #3e4451;
-      border-radius: 12px;
-      padding: 1.5rem;
+      position: relative;
+      background: #1e2430;
+      border: 4px solid #334155;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 360px;
+      height: 380px;
+      padding: 1.5rem 1rem;
       display: flex;
       justify-content: space-between;
-      width: 100%;
-      max-width: 320px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
     }
-    .col { display: flex; flex-direction: column; gap: 1.2rem; }
-    .btn {
-      width: 50px;
-      height: 50px;
+    svg#wireCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 5;
+    }
+    .col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      z-index: 10;
+    }
+    .slot {
+      position: relative;
+      width: 48px;
+      height: 48px;
       border-radius: 8px;
-      border: 3px solid #fff;
+      border: 3px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       cursor: pointer;
-      outline: none;
+      box-shadow: inset 0 -3px rgba(0,0,0,0.4);
       transition: transform 0.1s;
     }
-    .btn:active { transform: scale(0.92); }
-    .rojo { background: #ef4444; }
-    .azul { background: #3b82f6; }
-    .amarillo { background: #eab308; }
-    .verde { background: #22c55e; }
-    .selected { outline: 4px solid #fff; transform: scale(1.1); }
-    .done { opacity: 0.2; pointer-events: none; border-color: transparent; }
-    #msg {
-      margin-top: 1.5rem;
+    .slot:active {
+      transform: scale(0.95);
+    }
+    .slot.selected {
+      outline: 4px solid #fff;
+      transform: scale(1.1);
+    }
+    .pin {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #cbd5e1;
+      border: 2px solid #000;
+      pointer-events: none;
+    }
+
+    /* Colores */
+    .c-red    { background: #ef4444; }
+    .c-blue   { background: #3b82f6; }
+    .c-yellow { background: #eab308; }
+    .c-green  { background: #22c55e; }
+
+    #status {
+      margin-top: 1.2rem;
       font-weight: bold;
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       color: #22c55e;
-      min-height: 2rem;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
     }
   </style>
 </head>
 <body>
 
   <h2>ELECTRICIDAD</h2>
-  <p>Toca un color de la izquierda y luego su pareja a la derecha</p>
+  <p>Arrastra o toca un cable y conéctalo a su color</p>
 
-  <div class="panel">
-    <!-- Columna izquierda generada dinámicamente -->
-    <div class="col" id="col-left"></div>
-
-    <!-- Columna derecha generada dinámicamente -->
-    <div class="col" id="col-right"></div>
+  <div class="panel" id="board">
+    <svg id="wireCanvas"></svg>
+    <div class="col" id="colLeft"></div>
+    <div class="col" id="colRight"></div>
   </div>
 
-  <div id="msg"></div>
+  <div id="status"></div>
 
   <script>
-    const COLORS = ['rojo', 'azul', 'amarillo', 'verde'];
+    const COLORS = [
+      { id: 'red', hex: '#ef4444', class: 'c-red' },
+      { id: 'blue', hex: '#3b82f6', class: 'c-blue' },
+      { id: 'yellow', hex: '#eab308', class: 'c-yellow' },
+      { id: 'green', hex: '#22c55e', class: 'c-green' }
+    ];
 
-    // Algoritmo para barajar arrays aleatoriamente
-    function shuffle(array) {
-      const arr = [...array];
-      for (let i = arr.length - 1; i > 0; i--) {
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
+        [copy[i], copy[j]] = [copy[j], copy[i]];
       }
-      return arr;
+      return copy;
     }
 
-    const colLeft = document.getElementById('col-left');
-    const colRight = document.getElementById('col-right');
+    const board = document.getElementById('board');
+    const svg = document.getElementById('wireCanvas');
+    const colLeft = document.getElementById('colLeft');
+    const colRight = document.getElementById('colRight');
+    const statusText = document.getElementById('status');
 
-    const leftColors = shuffle(COLORS);
-    const rightColors = shuffle(COLORS);
+    const leftItems = shuffle(COLORS);
+    const rightItems = shuffle(COLORS);
 
-    let current = null;
-    let currentElem = null;
-    let completed = 0;
+    let activeStart = null;
+    let liveWire = null;
+    let solvedCount = 0;
 
-    // Renderizar botones izquierdos
-    leftColors.forEach(color => {
-      const btn = document.createElement('button');
-      btn.className = `btn ${color}`;
-      btn.onclick = () => pick(color, btn);
-      colLeft.appendChild(btn);
+    // Crear terminales
+    leftItems.forEach(item => {
+      const slot = document.createElement('div');
+      slot.className = `slot ${item.class}`;
+      slot.dataset.side = 'left';
+      slot.dataset.color = item.id;
+      slot.dataset.hex = item.hex;
+      slot.innerHTML = '<div class="pin"></div>';
+      colLeft.appendChild(slot);
+      bindEvents(slot);
     });
 
-    // Renderizar botones derechos
-    rightColors.forEach(color => {
-      const btn = document.createElement('button');
-      btn.className = `btn ${color}`;
-      btn.onclick = () => match(color, btn);
-      colRight.appendChild(btn);
+    rightItems.forEach(item => {
+      const slot = document.createElement('div');
+      slot.className = `slot ${item.class}`;
+      slot.dataset.side = 'right';
+      slot.dataset.color = item.id;
+      slot.dataset.hex = item.hex;
+      slot.innerHTML = '<div class="pin"></div>';
+      colRight.appendChild(slot);
+      bindEvents(slot);
     });
 
-    function pick(color, el) {
-      if (currentElem) currentElem.classList.remove('selected');
-      current = color;
-      currentElem = el;
-      el.classList.add('selected');
+    function getCenter(el) {
+      const boardRect = board.getBoundingClientRect();
+      const rect = el.getBoundingClientRect();
+      return {
+        x: (rect.left + rect.width / 2) - boardRect.left,
+        y: (rect.top + rect.height / 2) - boardRect.top
+      };
     }
 
-    function match(color, el) {
-      if (!current) return;
-      if (current === color) {
-        currentElem.classList.remove('selected');
-        currentElem.classList.add('done');
-        el.classList.add('done');
-        current = null;
-        currentElem = null;
-        completed++;
-        
-        if (completed === COLORS.length) {
-          document.getElementById('msg').innerText = '¡TAREA COMPLETADA!';
-          if (navigator.vibrate) navigator.vibrate(200);
+    function drawLine(p1, p2, hex, isTemp = false) {
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const dx = (p2.x - p1.x) * 0.45;
+      const d = `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
+
+      path.setAttribute('d', d);
+      path.setAttribute('stroke', hex);
+      path.setAttribute('stroke-width', '10');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('fill', 'none');
+      if (isTemp) path.id = 'temp-wire';
+      svg.appendChild(path);
+      return path;
+    }
+
+    function bindEvents(slot) {
+      slot.addEventListener('pointerdown', (e) => {
+        if (slot.dataset.done) return;
+        if (slot.dataset.side !== 'left') {
+          if (activeStart && activeStart.dataset.color === slot.dataset.color) {
+            connectSlots(activeStart, slot);
+          } else if (activeStart) {
+            cancelActive();
+          }
+          return;
         }
-      } else {
-        currentElem.classList.remove('selected');
-        current = null;
-        currentElem = null;
+
+        activeStart = slot;
+        slot.classList.add('selected');
+        const startPos = getCenter(slot);
+        liveWire = drawLine(startPos, startPos, slot.dataset.hex, true);
+        slot.setPointerCapture(e.pointerId);
+      });
+
+      slot.addEventListener('pointermove', (e) => {
+        if (!liveWire || !activeStart) return;
+        const boardRect = board.getBoundingClientRect();
+        const startPos = getCenter(activeStart);
+        const curPos = {
+          x: e.clientX - boardRect.left,
+          y: e.clientY - boardRect.top
+        };
+        
+        const dx = (curPos.x - startPos.x) * 0.45;
+        const d = `M ${startPos.x} ${startPos.y} C ${startPos.x + dx} ${startPos.y}, ${curPos.x - dx} ${curPos.y}, ${curPos.x} ${curPos.y}`;
+        liveWire.setAttribute('d', d);
+      });
+
+      slot.addEventListener('pointerup', (e) => {
+        if (!activeStart) return;
+
+        const elemBelow = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot');
+
+        if (elemBelow && elemBelow.dataset.side === 'right' && !elemBelow.dataset.done) {
+          if (elemBelow.dataset.color === activeStart.dataset.color) {
+            connectSlots(activeStart, elemBelow);
+          } else {
+            cancelActive();
+          }
+        } else {
+          if (liveWire) {
+            liveWire.remove();
+            liveWire = null;
+          }
+        }
+      });
+    }
+
+    function connectSlots(leftEl, rightEl) {
+      if (liveWire) liveWire.remove();
+      liveWire = null;
+      leftEl.classList.remove('selected');
+
+      const p1 = getCenter(leftEl);
+      const p2 = getCenter(rightEl);
+      drawLine(p1, p2, leftEl.dataset.hex, false);
+
+      leftEl.dataset.done = 'true';
+      rightEl.dataset.done = 'true';
+      leftEl.style.pointerEvents = 'none';
+      rightEl.style.pointerEvents = 'none';
+
+      activeStart = null;
+      solvedCount++;
+
+      if (solvedCount === COLORS.length) {
+        statusText.innerText = "¡TAREA COMPLETADA!";
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
       }
     }
+
+    function cancelActive() {
+      if (liveWire) {
+        liveWire.remove();
+        liveWire = null;
+      }
+      if (activeStart) {
+        activeStart.classList.remove('selected');
+        activeStart = null;
+      }
+    }
+
+    board.addEventListener('pointerdown', (e) => {
+      if (!e.target.closest('.slot')) cancelActive();
+    });
   </script>
 </body>
 </html>
