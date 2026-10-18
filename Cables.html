@@ -4,13 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Electricidad: Reparar Cableado</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
+    * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
     body {
       background: #0f1117;
       color: #fff;
@@ -25,17 +21,8 @@
       align-items: center;
       overflow: hidden;
     }
-    h2 {
-      margin: 0 0 0.3rem 0;
-      color: #f59e0b;
-      letter-spacing: 2px;
-      font-size: 1.4rem;
-    }
-    p {
-      margin: 0 0 1.2rem 0;
-      color: #94a3b8;
-      font-size: 0.9rem;
-    }
+    h2 { margin: 0 0 0.3rem 0; color: #f59e0b; letter-spacing: 2px; }
+    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
     .panel {
       position: relative;
       background: #1e2430;
@@ -49,21 +36,8 @@
       justify-content: space-between;
       box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
     }
-    svg#wireCanvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 5;
-    }
-    .col {
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      z-index: 10;
-    }
+    svg#wireCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+    .col { display: flex; flex-direction: column; justify-content: space-around; z-index: 10; }
     .slot {
       position: relative;
       width: 48px;
@@ -75,41 +49,29 @@
       justify-content: center;
       cursor: pointer;
       box-shadow: inset 0 -3px rgba(0,0,0,0.4);
-      transition: transform 0.1s;
     }
-    .slot:active {
-      transform: scale(0.95);
+    .slot.selected { outline: 4px solid #fff; transform: scale(1.1); }
+    .pin { width: 14px; height: 14px; border-radius: 50%; background: #cbd5e1; border: 2px solid #000; pointer-events: none; }
+    .c-red { background: #ef4444; } .c-blue { background: #3b82f6; }
+    .c-yellow { background: #eab308; } .c-green { background: #22c55e; }
+    #status { margin-top: 1.2rem; font-weight: bold; font-size: 1.2rem; color: #22c55e; min-height: 1.6rem; }
+    
+    #overlay {
+      position: fixed; inset: 0; background: #0f1117; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
-    .slot.selected {
-      outline: 4px solid #fff;
-      transform: scale(1.1);
-    }
-    .pin {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #cbd5e1;
-      border: 2px solid #000;
-      pointer-events: none;
-    }
-
-    /* Colores */
-    .c-red    { background: #ef4444; }
-    .c-blue   { background: #3b82f6; }
-    .c-yellow { background: #eab308; }
-    .c-green  { background: #22c55e; }
-
-    #status {
-      margin-top: 1.2rem;
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: #22c55e;
-      min-height: 1.6rem;
-      letter-spacing: 1px;
-    }
+    .overlay-input { padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430; color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem; }
+    .overlay-btn { margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
+
+  <div id="overlay">
+    <h2 id="ovTitle">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+  </div>
 
   <h2>ELECTRICIDAD</h2>
   <p>Arrastra o toca un cable y conéctalo a su color</p>
@@ -123,6 +85,42 @@
   <div id="status"></div>
 
   <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = localStorage.getItem('player_name') || '';
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      if (!currentPlayer) {
+        currentPlayer = input.value.trim().toUpperCase();
+        if (!currentPlayer) return alert('Escribe tu nombre');
+        localStorage.setItem('player_name', currentPlayer);
+      }
+
+      const { data } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', 'cables');
+
+      if (data && data.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        document.getElementById('playerName').style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+      } else {
+        document.getElementById('overlay').style.display = 'none';
+      }
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
+      checkPlayer();
+    }
+
     const COLORS = [
       { id: 'red', hex: '#ef4444', class: 'c-red' },
       { id: 'blue', hex: '#3b82f6', class: 'c-blue' },
@@ -141,55 +139,33 @@
 
     const board = document.getElementById('board');
     const svg = document.getElementById('wireCanvas');
-    const colLeft = document.getElementById('colLeft');
-    const colRight = document.getElementById('colRight');
-    const statusText = document.getElementById('status');
-
     const leftItems = shuffle(COLORS);
     const rightItems = shuffle(COLORS);
+    let activeStart = null, liveWire = null, solvedCount = 0;
 
-    let activeStart = null;
-    let liveWire = null;
-    let solvedCount = 0;
+    leftItems.forEach(item => createSlot(item, 'left', document.getElementById('colLeft')));
+    rightItems.forEach(item => createSlot(item, 'right', document.getElementById('colRight')));
 
-    // Crear terminales
-    leftItems.forEach(item => {
+    function createSlot(item, side, col) {
       const slot = document.createElement('div');
       slot.className = `slot ${item.class}`;
-      slot.dataset.side = 'left';
+      slot.dataset.side = side;
       slot.dataset.color = item.id;
       slot.dataset.hex = item.hex;
       slot.innerHTML = '<div class="pin"></div>';
-      colLeft.appendChild(slot);
+      col.appendChild(slot);
       bindEvents(slot);
-    });
-
-    rightItems.forEach(item => {
-      const slot = document.createElement('div');
-      slot.className = `slot ${item.class}`;
-      slot.dataset.side = 'right';
-      slot.dataset.color = item.id;
-      slot.dataset.hex = item.hex;
-      slot.innerHTML = '<div class="pin"></div>';
-      colRight.appendChild(slot);
-      bindEvents(slot);
-    });
+    }
 
     function getCenter(el) {
-      const boardRect = board.getBoundingClientRect();
-      const rect = el.getBoundingClientRect();
-      return {
-        x: (rect.left + rect.width / 2) - boardRect.left,
-        y: (rect.top + rect.height / 2) - boardRect.top
-      };
+      const b = board.getBoundingClientRect(), r = el.getBoundingClientRect();
+      return { x: (r.left + r.width / 2) - b.left, y: (r.top + r.height / 2) - b.top };
     }
 
     function drawLine(p1, p2, hex, isTemp = false) {
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       const dx = (p2.x - p1.x) * 0.45;
-      const d = `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`;
-
-      path.setAttribute('d', d);
+      path.setAttribute('d', `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`);
       path.setAttribute('stroke', hex);
       path.setAttribute('stroke-width', '10');
       path.setAttribute('stroke-linecap', 'round');
@@ -203,92 +179,58 @@
       slot.addEventListener('pointerdown', (e) => {
         if (slot.dataset.done) return;
         if (slot.dataset.side !== 'left') {
-          if (activeStart && activeStart.dataset.color === slot.dataset.color) {
-            connectSlots(activeStart, slot);
-          } else if (activeStart) {
-            cancelActive();
-          }
+          if (activeStart && activeStart.dataset.color === slot.dataset.color) connectSlots(activeStart, slot);
+          else if (activeStart) cancelActive();
           return;
         }
-
         activeStart = slot;
         slot.classList.add('selected');
-        const startPos = getCenter(slot);
-        liveWire = drawLine(startPos, startPos, slot.dataset.hex, true);
+        const pos = getCenter(slot);
+        liveWire = drawLine(pos, pos, slot.dataset.hex, true);
         slot.setPointerCapture(e.pointerId);
       });
 
       slot.addEventListener('pointermove', (e) => {
         if (!liveWire || !activeStart) return;
-        const boardRect = board.getBoundingClientRect();
-        const startPos = getCenter(activeStart);
-        const curPos = {
-          x: e.clientX - boardRect.left,
-          y: e.clientY - boardRect.top
-        };
-        
-        const dx = (curPos.x - startPos.x) * 0.45;
-        const d = `M ${startPos.x} ${startPos.y} C ${startPos.x + dx} ${startPos.y}, ${curPos.x - dx} ${curPos.y}, ${curPos.x} ${curPos.y}`;
-        liveWire.setAttribute('d', d);
+        const b = board.getBoundingClientRect();
+        const start = getCenter(activeStart);
+        const cur = { x: e.clientX - b.left, y: e.clientY - b.top };
+        const dx = (cur.x - start.x) * 0.45;
+        liveWire.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + dx} ${start.y}, ${cur.x - dx} ${cur.y}, ${cur.x} ${cur.y}`);
       });
 
       slot.addEventListener('pointerup', (e) => {
         if (!activeStart) return;
-
-        const elemBelow = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot');
-
-        if (elemBelow && elemBelow.dataset.side === 'right' && !elemBelow.dataset.done) {
-          if (elemBelow.dataset.color === activeStart.dataset.color) {
-            connectSlots(activeStart, elemBelow);
-          } else {
-            cancelActive();
-          }
-        } else {
-          if (liveWire) {
-            liveWire.remove();
-            liveWire = null;
-          }
+        const elem = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot');
+        if (elem && elem.dataset.side === 'right' && !elem.dataset.done && elem.dataset.color === activeStart.dataset.color) {
+          connectSlots(activeStart, elem);
+        } else if (liveWire) {
+          liveWire.remove(); liveWire = null;
         }
       });
     }
 
-    function connectSlots(leftEl, rightEl) {
-      if (liveWire) liveWire.remove();
-      liveWire = null;
+    async function connectSlots(leftEl, rightEl) {
+      if (liveWire) { liveWire.remove(); liveWire = null; }
       leftEl.classList.remove('selected');
-
-      const p1 = getCenter(leftEl);
-      const p2 = getCenter(rightEl);
-      drawLine(p1, p2, leftEl.dataset.hex, false);
-
-      leftEl.dataset.done = 'true';
-      rightEl.dataset.done = 'true';
-      leftEl.style.pointerEvents = 'none';
-      rightEl.style.pointerEvents = 'none';
-
+      drawLine(getCenter(leftEl), getCenter(rightEl), leftEl.dataset.hex, false);
+      leftEl.dataset.done = 'true'; rightEl.dataset.done = 'true';
+      leftEl.style.pointerEvents = 'none'; rightEl.style.pointerEvents = 'none';
       activeStart = null;
       solvedCount++;
 
       if (solvedCount === COLORS.length) {
-        statusText.innerText = "¡TAREA COMPLETADA!";
+        document.getElementById('status').innerText = "¡TAREA COMPLETADA!";
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: 'cables' }]);
       }
     }
 
     function cancelActive() {
-      if (liveWire) {
-        liveWire.remove();
-        liveWire = null;
-      }
-      if (activeStart) {
-        activeStart.classList.remove('selected');
-        activeStart = null;
-      }
+      if (liveWire) { liveWire.remove(); liveWire = null; }
+      if (activeStart) { activeStart.classList.remove('selected'); activeStart = null; }
     }
-
-    board.addEventListener('pointerdown', (e) => {
-      if (!e.target.closest('.slot')) cancelActive();
-    });
   </script>
 </body>
 </html>
