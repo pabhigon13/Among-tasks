@@ -6,28 +6,44 @@
   <title>Panel de Control - Admin Among Us</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 2rem; margin: 0; }
-    h1 { color: #f59e0b; }
-    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; max-width: 400px; margin: 1.5rem auto; padding: 1.5rem; }
-    .counter { font-size: 3rem; font-weight: bold; color: #22c55e; margin: 0.5rem 0; }
-    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; }
-    li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.6rem 1rem; border-radius: 6px; display: flex; justify-content: space-between; }
-    .btn-reset { background: #ef4444; color: white; border: none; padding: 1rem 1.5rem; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; width: 100%; }
-    .btn-reset:hover { background: #dc2626; }
+    body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 1.5rem; margin: 0; }
+    h1 { color: #f59e0b; margin-bottom: 0.2rem; }
+    .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; }
+    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 360px; padding: 1.5rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .counter { font-size: 3rem; font-weight: bold; margin: 0.3rem 0; }
+    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 180px; overflow-y: auto; }
+    li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.6rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-reset { background: #ef4444; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+    .btn-reset:active { background: #b91c1c; }
+    .btn-all { background: #dc2626; color: white; border: none; padding: 1rem 2rem; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 2rem; }
+    #statusInfo { font-size: 0.85rem; color: #22c55e; margin-top: 1rem; }
   </style>
 </head>
 <body>
 
-  <h1>CONTROL DE MISIONES</h1>
+  <h1>SALA DE CONTROL</h1>
+  <p style="color: #64748b; margin: 0;">Supervisión de la partida en vivo</p>
   
-  <div class="card">
-    <h2>⚡ Electricidad: Cables</h2>
-    <div id="count" class="counter">0</div>
-    <p style="color: #94a3b8;">Jugadores que la han completado:</p>
-    <ul id="playerList"></ul>
+  <div class="grid">
+    <!-- Tarea 1: Cables -->
+    <div class="card">
+      <h2 style="margin: 0; color: #f59e0b;">⚡ Cables (Electricidad)</h2>
+      <div id="countCables" class="counter" style="color: #22c55e;">0</div>
+      <ul id="listCables"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
+      <button class="btn-reset" onclick="resetTask('cables')">Reiniciar Cables</button>
+    </div>
 
-    <button class="btn-reset" onclick="resetTask()">REINICIAR TAREA PARA TODOS</button>
+    <!-- Tarea 2: Reactor / Números -->
+    <div class="card">
+      <h2 style="margin: 0; color: #38bdf8;">🔢 Números (Reactor)</h2>
+      <div id="countNumeros" class="counter" style="color: #38bdf8;">0</div>
+      <ul id="listNumeros"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
+      <button class="btn-reset" onclick="resetTask('numeros')">Reiniciar Números</button>
+    </div>
   </div>
+
+  <button class="btn-all" onclick="resetAll()">REINICIAR TODAS LAS TAREAS</button>
+  <div id="statusInfo">Conectado en vivo (actualizando cada 3s)</div>
 
   <script>
     const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
@@ -38,25 +54,39 @@
       const { data } = await client
         .from('completed_tasks')
         .select('*')
-        .eq('task_name', 'cables')
         .order('completed_at', { ascending: false });
 
-      if (data) {
-        document.getElementById('count').innerText = data.length;
-        const list = document.getElementById('playerList');
-        list.innerHTML = '';
-        data.forEach(item => {
-          const li = document.createElement('li');
-          const hora = new Date(item.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-          li.innerHTML = `<span>👤 ${item.player_name}</span><span style="color:#94a3b8;">${hora}</span>`;
-          list.appendChild(li);
-        });
-      }
+      if (!data) return;
+
+      renderTask(data.filter(t => t.task_name === 'cables'), 'countCables', 'listCables');
+      renderTask(data.filter(t => t.task_name === 'numeros'), 'countNumeros', 'listNumeros');
     }
 
-    async function resetTask() {
-      if (!confirm('¿Seguro que quieres reiniciar la tarea de cables para todos?')) return;
-      await client.from('completed_tasks').delete().eq('task_name', 'cables');
+    function renderTask(items, countId, listId) {
+      document.getElementById(countId).innerText = items.length;
+      const list = document.getElementById(listId);
+      list.innerHTML = '';
+      if (items.length === 0) {
+        list.innerHTML = '<li style="color:#64748b; justify-content:center;">Sin completar</li>';
+        return;
+      }
+      items.forEach(item => {
+        const li = document.createElement('li');
+        const hora = new Date(item.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        li.innerHTML = `<span>🧑‍🚀 <b>${item.player_name}</b></span><span style="color:#94a3b8; font-size:0.8rem;">${hora}</span>`;
+        list.appendChild(li);
+      });
+    }
+
+    async function resetTask(name) {
+      if (!confirm(`¿Reiniciar la tarea ${name}?`)) return;
+      await client.from('completed_tasks').delete().eq('task_name', name);
+      loadStats();
+    }
+
+    async function resetAll() {
+      if (!confirm('¿Reiniciar TODAS las tareas para una nueva ronda?')) return;
+      await client.from('completed_tasks').delete().neq('id', 0);
       loadStats();
     }
 
