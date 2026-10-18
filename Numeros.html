@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Reactor: Desbloquear Colector</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #0f1117;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 {
+      margin: 0 0 0.3rem 0;
+      color: #38bdf8;
+      letter-spacing: 2px;
+      font-size: 1.4rem;
+    }
+    p {
+      margin: 0 0 1rem 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+    .panel {
+      background: #1e2430;
+      border: 4px solid #334155;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 340px;
+      padding: 1.2rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .num-btn {
+      aspect-ratio: 1;
+      background: #0f172a;
+      border: 2px solid #38bdf8;
+      border-radius: 8px;
+      color: #38bdf8;
+      font-size: 1.4rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 0 #0284c7;
+      transition: all 0.1s;
+    }
+    .num-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #0284c7;
+    }
+    .num-btn.pressed {
+      background: #0369a1;
+      color: #bae6fd;
+      border-color: #0284c7;
+      box-shadow: none;
+      transform: translateY(4px);
+      pointer-events: none;
+    }
+    .num-btn.error {
+      background: #ef4444;
+      border-color: #dc2626;
+      color: #fff;
+      box-shadow: 0 0 10px #ef4444;
+    }
+    #status {
+      margin-top: 1.2rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
+    }
+    
+    /* Capa de inicio */
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: #0f1117;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem;
+      border-radius: 8px;
+      border: 1px solid #444;
+      background: #1e2430;
+      color: #fff;
+      width: 80%;
+      max-width: 250px;
+      text-align: center;
+      font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem;
+      padding: 0.8rem 1.5rem;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      background: #334155;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #38bdf8;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>REACTOR</h2>
+  <p>Pulsa los números en orden del 1 al 10</p>
+
+  <div class="panel">
+    <div class="grid" id="numberGrid"></div>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let nextExpected = 1;
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#38bdf8';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      const { data } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', 'numeros');
+
+      if (data && data.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+      } else {
+        document.getElementById('overlay').style.display = 'none';
+        initGame();
+      }
+    }
+
+    function shuffle(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function initGame() {
+      const grid = document.getElementById('numberGrid');
+      grid.innerHTML = '';
+      nextExpected = 1;
+
+      const numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      const randomized = shuffle(numbers);
+
+      randomized.forEach(num => {
+        const btn = document.createElement('button');
+        btn.className = 'num-btn';
+        btn.innerText = num;
+        btn.onclick = () => handlePress(num, btn);
+        grid.appendChild(btn);
+      });
+    }
+
+    async function handlePress(num, btn) {
+      if (num === nextExpected) {
+        btn.classList.add('pressed');
+        nextExpected++;
+
+        if (nextExpected > 10) {
+          document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+          await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: 'numeros' }]);
+        }
+      } else {
+        // Error: fallo en la secuencia
+        btn.classList.add('error');
+        if (navigator.vibrate) navigator.vibrate(200);
+
+        setTimeout(() => {
+          document.querySelectorAll('.num-btn').forEach(b => {
+            b.classList.remove('pressed', 'error');
+          });
+          nextExpected = 1;
+        }, 300);
+      }
+    }
+  </script>
+</body>
+</html>
