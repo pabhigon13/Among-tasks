@@ -62,6 +62,7 @@
     }
     .overlay-input { padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430; color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem; }
     .overlay-btn { margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .btn-retry { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; }
   </style>
 </head>
 <body>
@@ -69,8 +70,9 @@
   <div id="overlay">
     <h2 id="ovTitle">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
-    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." />
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
     <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
   <h2>ELECTRICIDAD</h2>
@@ -89,17 +91,28 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = localStorage.getItem('player_name') || '';
+    let currentPlayer = '';
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#f59e0b';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
 
     async function checkPlayer() {
       const input = document.getElementById('playerName');
-      if (!currentPlayer) {
-        currentPlayer = input.value.trim().toUpperCase();
-        if (!currentPlayer) return alert('Escribe tu nombre');
-        localStorage.setItem('player_name', currentPlayer);
-      }
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
 
-      const { data } = await client
+      currentPlayer = name;
+
+      const { data, error } = await client
         .from('completed_tasks')
         .select('*')
         .eq('player_name', currentPlayer)
@@ -109,16 +122,12 @@
         document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
         document.getElementById('ovTitle').style.color = '#ef4444';
         document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
-        document.getElementById('playerName').style.display = 'none';
+        input.style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
       } else {
         document.getElementById('overlay').style.display = 'none';
       }
-    }
-
-    if (currentPlayer) {
-      document.getElementById('playerName').value = currentPlayer;
-      checkPlayer();
     }
 
     const COLORS = [
