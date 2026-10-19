@@ -13,107 +13,123 @@
       user-select: none;
     }
     body {
-      background: #0b0d13;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem;
+      padding: 1rem 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
-    }
-    h2 { margin: 0 0 0.2rem 0; color: #a855f7; letter-spacing: 2px; font-size: 1.4rem; }
-    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
-
-    /* Indicador de 5 rondas */
-    .round-indicators {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 1.2rem;
-    }
-    .round-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      background: #1e293b;
-      border: 2px solid #475569;
-      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-    }
-    .round-dot.active {
-      background: #a855f7;
-      border-color: #c084fc;
-      box-shadow: 0 0 10px #a855f7;
+      transition: transform 0.3s ease;
     }
 
-    /* Tablero 2x2 */
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
+    }
+
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 900;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.2rem 0; color: #a855f7; letter-spacing: 2px; }
+    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
+
     .simon-board {
-      background: #161922;
-      border: 4px solid #334155;
-      border-radius: 20px;
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 24px;
       padding: 1.2rem;
+      width: 100%;
+      max-width: 330px;
       display: grid;
-      grid-template-columns: repeat(2, 110px);
+      grid-template-columns: 1fr 1fr;
       gap: 14px;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
     }
 
-    .color-btn {
-      width: 110px;
-      height: 110px;
-      border-radius: 16px;
-      border: 3px solid rgba(255, 255, 255, 0.15);
+    .simon-pad {
+      aspect-ratio: 1;
+      border-radius: 18px;
       cursor: pointer;
-      outline: none;
-      opacity: 0.35;
-      transition: opacity 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease;
+      border: 3px solid rgba(255,255,255,0.15);
+      transition: all 0.1s ease;
+      opacity: 0.45;
     }
-    .color-btn:active {
-      transform: scale(0.96);
-    }
-
-    /* Colores en reposo */
-    .btn-green  { background: #22c55e; }
-    .btn-red    { background: #ef4444; }
-    .btn-yellow { background: #eab308; }
-    .btn-blue   { background: #3b82f6; }
-
-    /* Iluminación activa */
-    .btn-green.lit  { opacity: 1; box-shadow: 0 0 25px #22c55e; border-color: #fff; }
-    .btn-red.lit    { opacity: 1; box-shadow: 0 0 25px #ef4444; border-color: #fff; }
-    .btn-yellow.lit { opacity: 1; box-shadow: 0 0 25px #eab308; border-color: #fff; }
-    .btn-blue.lit   { opacity: 1; box-shadow: 0 0 25px #3b82f6; border-color: #fff; }
-
-    .color-btn.error-flash {
-      opacity: 1 !important;
-      background: #ef4444 !important;
-      box-shadow: 0 0 30px #ef4444 !important;
-      border-color: #fff !important;
+    .simon-pad.active {
+      opacity: 1;
+      filter: brightness(1.4);
+      transform: scale(0.97);
     }
 
-    #turnLabel {
-      margin-top: 1.2rem;
-      font-weight: bold;
+    .pad-0 { background: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+    .pad-1 { background: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); }
+    .pad-2 { background: #eab308; box-shadow: 0 0 15px rgba(234, 179, 8, 0.4); }
+    .pad-3 { background: #22c55e; box-shadow: 0 0 15px rgba(34, 197, 94, 0.4); }
+
+    .step-counter {
+      margin-top: 1rem;
+      font-weight: 900;
+      letter-spacing: 1.5px;
+      color: #a855f7;
       font-size: 0.95rem;
-      color: #c084fc;
-      min-height: 1.4rem;
-      letter-spacing: 1px;
     }
 
     #status {
-      margin-top: 0.4rem;
+      margin-top: 0.5rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       color: #22c55e;
-      min-height: 1.6rem;
+      min-height: 1.5rem;
     }
 
-    /* Capa de inicio y bloqueo */
     #overlay {
-      position: fixed; inset: 0; background: #0b0d13; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -136,7 +152,30 @@
 </head>
 <body>
 
-  <!-- Overlay -->
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #a855f7;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -153,26 +192,16 @@
   </div>
 
   <h2>REACTOR: SIMON DICE</h2>
-  <p>Memoriza la secuencia de colores y repítela</p>
+  <p>Memoriza y reproduce la secuencia de luces</p>
 
-  <!-- Luces de progreso -->
-  <div class="round-indicators">
-    <div class="round-dot" id="dot-0"></div>
-    <div class="round-dot" id="dot-1"></div>
-    <div class="round-dot" id="dot-2"></div>
-    <div class="round-dot" id="dot-3"></div>
-    <div class="round-dot" id="dot-4"></div>
-  </div>
-
-  <!-- Tablero 2x2 -->
   <div class="simon-board">
-    <button class="color-btn btn-green" id="btn-0" onclick="handlePlayerTap(0)"></button>
-    <button class="color-btn btn-red" id="btn-1" onclick="handlePlayerTap(1)"></button>
-    <button class="color-btn btn-yellow" id="btn-2" onclick="handlePlayerTap(2)"></button>
-    <button class="color-btn btn-blue" id="btn-3" onclick="handlePlayerTap(3)"></button>
+    <div class="simon-pad pad-0" id="pad-0" onclick="handlePadClick(0)"></div>
+    <div class="simon-pad pad-1" id="pad-1" onclick="handlePadClick(1)"></div>
+    <div class="simon-pad pad-2" id="pad-2" onclick="handlePadClick(2)"></div>
+    <div class="simon-pad pad-3" id="pad-3" onclick="handlePadClick(3)"></div>
   </div>
 
-  <div id="turnLabel">Esperando...</div>
+  <div class="step-counter" id="stepCounter">RONDA 1 / 4</div>
   <div id="status"></div>
 
   <script>
@@ -184,22 +213,23 @@
     let currentPlayer = '';
     let heartbeatTimer = null;
 
-    const TOTAL_ROUNDS = 5;
-    const FREQS = [330, 440, 550, 660]; // Tonos de los 4 botones
+    const TARGET_ROUNDS = 4;
     let sequence = [];
-    let currentRound = 0;
-    let playerIndex = 0;
-    let canPlay = false;
+    let playerSequence = [];
+    let currentRound = 1;
+    let isShowingSequence = false;
+    let isTaskDone = false;
 
-    // Sonido
+    const PAD_FREQS = [261.63, 329.63, 392.00, 523.25]; // Do, Mi, Sol, Do agudo
+
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.2) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.25) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -228,7 +258,6 @@
 
       currentPlayer = name;
 
-      // 1. Ya completada
       const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
@@ -245,7 +274,6 @@
         return;
       }
 
-      // 2. Comprobar ocupación
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -262,7 +290,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -271,11 +299,14 @@
         }
       }
 
-      // 3. Tomar posesión
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      initNewGame();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      startSimonGame();
     }
 
     async function takeSession() {
@@ -296,109 +327,128 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Lógica Simon
-    function initNewGame() {
-      sequence = [];
-      for (let i = 0; i < TOTAL_ROUNDS; i++) {
-        sequence.push(Math.floor(Math.random() * 4));
-      }
-      currentRound = 0;
-      updateIndicators();
-      setTimeout(playSequence, 800);
-    }
+    async function checkSabotages() {
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-    function updateIndicators() {
-      for (let i = 0; i < TOTAL_ROUNDS; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        if (i < currentRound) dot.classList.add('active');
-        else dot.classList.remove('active');
-      }
-    }
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
 
-    async function playSequence() {
-      canPlay = false;
-      playerIndex = 0;
-      const turn = document.getElementById('turnLabel');
-      turn.innerText = "MEMORIZA LA SECUENCIA...";
-      turn.style.color = "#c084fc";
-
-      await sleep(400);
-
-      const itemsToShow = sequence.slice(0, currentRound + 1);
-      for (let colorIdx of itemsToShow) {
-        await lightUpButton(colorIdx, 350);
-        await sleep(200);
+      const blackoutEl = document.getElementById('lightsBlackout');
+      if (sabLuces && sabLuces.active) {
+        blackoutEl.style.display = 'flex';
+      } else {
+        blackoutEl.style.display = 'none';
       }
 
-      turn.innerText = `TU TURNO (RONDA ${currentRound + 1}/${TOTAL_ROUNDS})`;
-      turn.style.color = "#38bdf8";
-      canPlay = true;
-    }
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
 
-    function lightUpButton(index, duration = 300) {
-      return new Promise(resolve => {
-        const btn = document.getElementById(`btn-${index}`);
-        btn.classList.add('lit');
-        playBeep(FREQS[index], 'triangle', duration / 1000);
-        setTimeout(() => {
-          btn.classList.remove('lit');
-          resolve();
-        }, duration);
-      });
-    }
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
 
-    async function handlePlayerTap(index) {
-      if (!canPlay) return;
-
-      lightUpButton(index, 200);
-
-      if (index === sequence[playerIndex]) {
-        playerIndex++;
-
-        // Ronda superada
-        if (playerIndex > currentRound) {
-          canPlay = false;
-          currentRound++;
-          updateIndicators();
-
-          if (currentRound >= TOTAL_ROUNDS) {
-            // Completado al 100%
-            document.getElementById('turnLabel').innerText = '';
-            document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
-            playBeep(880, 'sine', 0.4);
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-            await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
-            await releaseSession();
-          } else {
-            // Siguiente ronda
-            document.getElementById('turnLabel').innerText = '¡BIEN HECHO!';
-            document.getElementById('turnLabel').style.color = '#22c55e';
-            await sleep(800);
-            playSequence();
-          }
+        if (remaining === 0) {
+          defeatEl.style.display = 'flex';
+        } else {
+          defeatEl.style.display = 'none';
         }
       } else {
-        // Fallo: volver a la Ronda 1
-        canPlay = false;
-        playBeep(160, 'sawtooth', 0.4);
-        if (navigator.vibrate) navigator.vibrate(300);
-
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.add('error-flash'));
-        const turn = document.getElementById('turnLabel');
-        turn.innerText = "¡ERROR! VUELVES A LA RONDA 1";
-        turn.style.color = "#ef4444";
-
-        await sleep(800);
-        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('error-flash'));
-
-        // Reinicio completo desde ronda 1
-        initNewGame();
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
       }
+
+      if (sabControles && sabControles.active) {
+        document.body.classList.add('inverted-controls');
+      } else {
+        document.body.classList.remove('inverted-controls');
+      }
+    }
+
+    function startSimonGame() {
+      sequence = [];
+      for (let i = 0; i < TARGET_ROUNDS; i++) {
+        sequence.push(Math.floor(Math.random() * 4));
+      }
+      currentRound = 1;
+      isTaskDone = false;
+      playRound();
+    }
+
+    async function playRound() {
+      isShowingSequence = true;
+      playerSequence = [];
+      document.getElementById('stepCounter').innerText = `RONDA ${currentRound} / ${TARGET_ROUNDS}`;
+      document.getElementById('status').innerText = 'Memoriza...';
+      document.getElementById('status').style.color = '#94a3b8';
+
+      await sleep(700);
+
+      for (let i = 0; i < currentRound; i++) {
+        const padIndex = sequence[i];
+        await flashPad(padIndex, 380);
+        await sleep(180);
+      }
+
+      isShowingSequence = false;
+      document.getElementById('status').innerText = '¡Tu turno!';
+      document.getElementById('status').style.color = '#38bdf8';
+    }
+
+    async function flashPad(index, duration = 300) {
+      const pad = document.getElementById(`pad-${index}`);
+      pad.classList.add('active');
+      playBeep(PAD_FREQS[index], 'sine', duration / 1000);
+      await sleep(duration);
+      pad.classList.remove('active');
     }
 
     function sleep(ms) {
       return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function handlePadClick(index) {
+      if (isShowingSequence || isTaskDone) return;
+
+      flashPad(index, 200);
+      playerSequence.push(index);
+
+      const currentIndex = playerSequence.length - 1;
+
+      if (playerSequence[currentIndex] !== sequence[currentIndex]) {
+        playBeep(140, 'sawtooth', 0.4);
+        if (navigator.vibrate) navigator.vibrate(250);
+        document.getElementById('status').innerText = '¡FALLO! Reiniciando secuencia...';
+        document.getElementById('status').style.color = '#ef4444';
+        isShowingSequence = true;
+        await sleep(1000);
+        currentRound = 1;
+        playRound();
+        return;
+      }
+
+      if (playerSequence.length === currentRound) {
+        if (currentRound === TARGET_ROUNDS) {
+          isTaskDone = true;
+          document.getElementById('status').innerText = '¡REACTOR CALIBRADO!';
+          document.getElementById('status').style.color = '#22c55e';
+          playBeep(880, 'sine', 0.4);
+          if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+          await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+          await releaseSession();
+        } else {
+          currentRound++;
+          document.getElementById('status').innerText = '¡Correcto!';
+          document.getElementById('status').style.color = '#22c55e';
+          await sleep(600);
+          playRound();
+        }
+      }
     }
   </script>
 </body>
