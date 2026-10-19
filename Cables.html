@@ -3,71 +3,173 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Electricidad: Reparar Cableado</title>
+  <title>Electricidad: Cables</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; touch-action: none; -webkit-user-select: none; user-select: none; }
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
     body {
       background: #0f1117;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem;
+      padding: 1rem 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
+      transition: transform 0.3s ease;
     }
-    h2 { margin: 0 0 0.3rem 0; color: #f59e0b; letter-spacing: 2px; }
+
+    /* Modificador para el sabotaje de controles invertidos */
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
+    }
+
+    /* Banner flotante de Fuga de Gas Crítica */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 900;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    /* Capa de apagón de luces (bloquea toda interacción) */
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.2rem 0; color: #f59e0b; letter-spacing: 2px; }
     p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
+
     .panel {
       position: relative;
       background: #1e2430;
       border: 4px solid #334155;
-      border-radius: 14px;
+      border-radius: 16px;
       width: 100%;
       max-width: 360px;
       height: 380px;
-      padding: 1.5rem 1rem;
       display: flex;
       justify-content: space-between;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+      padding: 1rem 0.5rem;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
     }
-    svg#wireCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
-    .col { display: flex; flex-direction: column; justify-content: space-around; z-index: 10; }
-    .slot {
-      position: relative;
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      border: 3px solid #000;
+    .side {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      width: 70px;
+      z-index: 2;
+    }
+    .node {
+      height: 38px;
+      border-radius: 6px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-weight: bold;
+      font-size: 0.8rem;
       cursor: pointer;
-      box-shadow: inset 0 -3px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      border: 2px solid rgba(255,255,255,0.2);
     }
-    .slot.selected { outline: 4px solid #fff; transform: scale(1.1); }
-    .pin { width: 14px; height: 14px; border-radius: 50%; background: #cbd5e1; border: 2px solid #000; pointer-events: none; }
-    .c-red { background: #ef4444; } .c-blue { background: #3b82f6; }
-    .c-yellow { background: #eab308; } .c-green { background: #22c55e; }
-    #status { margin-top: 1.2rem; font-weight: bold; font-size: 1.2rem; color: #22c55e; min-height: 1.6rem; }
-    
+    .node-red { background: #ef4444; }
+    .node-blue { background: #3b82f6; }
+    .node-yellow { background: #eab308; color: #000; }
+    .node-pink { background: #ec4899; }
+
+    svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+    line {
+      stroke-width: 8;
+      stroke-linecap: round;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    }
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.5rem;
+    }
+
     #overlay {
       position: fixed; inset: 0; background: #0f1117; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
-    .overlay-input { padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430; color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem; }
-    .overlay-btn { margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .btn-retry { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; }
-    .busy-box { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px; padding: 1rem; margin: 1rem; max-width: 300px; display: none; }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #f59e0b; color: #000;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
   </style>
 </head>
 <body>
 
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS DETECTADA! TIEMPO RESTANTE: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Negra Sabotaje de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      El impostor ha cortado la red eléctrica. Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Overlay de Identificación -->
   <div id="overlay">
     <h2 id="ovTitle">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -83,13 +185,13 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>ELECTRICIDAD</h2>
-  <p>Arrastra o toca un cable y conéctalo a su color</p>
+  <h2>CABLES</h2>
+  <p>Conecta los cables del mismo color</p>
 
-  <div class="panel" id="board">
-    <svg id="wireCanvas"></svg>
-    <div class="col" id="colLeft"></div>
-    <div class="col" id="colRight"></div>
+  <div class="panel" id="panel">
+    <svg id="svg"></svg>
+    <div class="side" id="leftSide"></div>
+    <div class="side" id="rightSide"></div>
   </div>
 
   <div id="status"></div>
@@ -103,6 +205,34 @@
     let currentPlayer = '';
     let heartbeatTimer = null;
 
+    const COLORS = [
+      { id: 'red', hex: '#ef4444', class: 'node-red' },
+      { id: 'blue', hex: '#3b82f6', class: 'node-blue' },
+      { id: 'yellow', hex: '#eab308', class: 'node-yellow' },
+      { id: 'pink', hex: '#ec4899', class: 'node-pink' }
+    ];
+
+    let selectedNode = null;
+    let completed = {};
+    const svg = document.getElementById('svg');
+    const panel = document.getElementById('panel');
+    let tempLine = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
       document.getElementById('ovTitle').style.color = '#f59e0b';
@@ -112,6 +242,7 @@
       input.style.display = 'block';
       input.value = '';
       input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
       document.getElementById('btnStart').style.display = 'block';
       document.getElementById('btnRetry').style.display = 'none';
     }
@@ -123,7 +254,6 @@
 
       currentPlayer = name;
 
-      // 1. Comprobar si ya la completó
       const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
@@ -140,7 +270,6 @@
         return;
       }
 
-      // 2. Comprobar si el puesto está ocupado por otra persona (margen de 12 segundos)
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -157,7 +286,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo. Espera a que termine.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -166,12 +295,15 @@
         }
       }
 
-      // 3. Tomar posesión del puesto
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
-
-      // Enviar pulso cada 3 segundos para mantener la reserva activa
       heartbeatTimer = setInterval(takeSession, 3000);
+
+      // Iniciar bucle de comprobación de sabotajes
+      checkSabotages();
+      setInterval(checkSabotages, 2000);
+
+      initGame();
     }
 
     async function takeSession() {
@@ -189,122 +321,142 @@
       }
     }
 
-    // Liberar si cierra o cambia de app
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Minijuego
-    const COLORS = [
-      { id: 'red', hex: '#ef4444', class: 'c-red' },
-      { id: 'blue', hex: '#3b82f6', class: 'c-blue' },
-      { id: 'yellow', hex: '#eab308', class: 'c-yellow' },
-      { id: 'green', hex: '#22c55e', class: 'c-green' }
-    ];
+    // ==========================================
+    // SISTEMA UNIVERSAL DE ESCUCHA DE SABOTAJES
+    // ==========================================
+    async function checkSabotages() {
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-    function shuffle(arr) {
-      const copy = [...arr];
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
+
+      // 1. Sabotaje Luces
+      const blackoutEl = document.getElementById('lightsBlackout');
+      if (sabLuces && sabLuces.active) {
+        blackoutEl.style.display = 'flex';
+      } else {
+        blackoutEl.style.display = 'none';
       }
-      return copy;
+
+      // 2. Sabotaje Fuga de Gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+      } else {
+        gasBanner.style.display = 'none';
+      }
+
+      // 3. Sabotaje Invertir Controles
+      if (sabControles && sabControles.active) {
+        document.body.classList.add('inverted-controls');
+      } else {
+        document.body.classList.remove('inverted-controls');
+      }
     }
 
-    const board = document.getElementById('board');
-    const svg = document.getElementById('wireCanvas');
-    const leftItems = shuffle(COLORS);
-    const rightItems = shuffle(COLORS);
-    let activeStart = null, liveWire = null, solvedCount = 0;
-
-    leftItems.forEach(item => createSlot(item, 'left', document.getElementById('colLeft')));
-    rightItems.forEach(item => createSlot(item, 'right', document.getElementById('colRight')));
-
-    function createSlot(item, side, col) {
-      const slot = document.createElement('div');
-      slot.className = `slot ${item.class}`;
-      slot.dataset.side = side;
-      slot.dataset.color = item.id;
-      slot.dataset.hex = item.hex;
-      slot.innerHTML = '<div class="pin"></div>';
-      col.appendChild(slot);
-      bindEvents(slot);
+    function shuffle(array) {
+      return [...array].sort(() => Math.random() - 0.5);
     }
 
-    function getCenter(el) {
-      const b = board.getBoundingClientRect(), r = el.getBoundingClientRect();
-      return { x: (r.left + r.width / 2) - b.left, y: (r.top + r.height / 2) - b.top };
+    function initGame() {
+      const leftColors = shuffle(COLORS);
+      const rightColors = shuffle(COLORS);
+
+      const leftSide = document.getElementById('leftSide');
+      const rightSide = document.getElementById('rightSide');
+      leftSide.innerHTML = '';
+      rightSide.innerHTML = '';
+
+      leftColors.forEach(c => {
+        const div = document.createElement('div');
+        div.className = `node ${c.class}`;
+        div.dataset.color = c.id;
+        div.dataset.side = 'left';
+        leftSide.appendChild(div);
+      });
+
+      rightColors.forEach(c => {
+        const div = document.createElement('div');
+        div.className = `node ${c.class}`;
+        div.dataset.color = c.id;
+        div.dataset.side = 'right';
+        rightSide.appendChild(div);
+      });
+
+      setupEvents();
     }
 
-    function drawLine(p1, p2, hex, isTemp = false) {
-      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      const dx = (p2.x - p1.x) * 0.45;
-      path.setAttribute('d', `M ${p1.x} ${p1.y} C ${p1.x + dx} ${p1.y}, ${p2.x - dx} ${p2.y}, ${p2.x} ${p2.y}`);
-      path.setAttribute('stroke', hex);
-      path.setAttribute('stroke-width', '10');
-      path.setAttribute('stroke-linecap', 'round');
-      path.setAttribute('fill', 'none');
-      if (isTemp) path.id = 'temp-wire';
-      svg.appendChild(path);
-      return path;
-    }
+    function setupEvents() {
+      panel.addEventListener('pointerdown', (e) => {
+        const node = e.target.closest('.node');
+        if (!node || node.dataset.side !== 'left') return;
+        if (completed[node.dataset.color]) return;
 
-    function bindEvents(slot) {
-      slot.addEventListener('pointerdown', (e) => {
-        if (slot.dataset.done) return;
-        if (slot.dataset.side !== 'left') {
-          if (activeStart && activeStart.dataset.color === slot.dataset.color) connectSlots(activeStart, slot);
-          else if (activeStart) cancelActive();
-          return;
+        selectedNode = node;
+        const pRect = panel.getBoundingClientRect();
+        const nRect = node.getBoundingClientRect();
+
+        const x1 = nRect.right - pRect.left;
+        const y1 = nRect.top + nRect.height / 2 - pRect.top;
+
+        tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        tempLine.setAttribute('x1', x1);
+        tempLine.setAttribute('y1', y1);
+        tempLine.setAttribute('x2', x1);
+        tempLine.setAttribute('y2', y1);
+        const col = COLORS.find(c => c.id === node.dataset.color);
+        tempLine.setAttribute('stroke', col.hex);
+        svg.appendChild(tempLine);
+      });
+
+      window.addEventListener('pointermove', (e) => {
+        if (!selectedNode || !tempLine) return;
+        const pRect = panel.getBoundingClientRect();
+        tempLine.setAttribute('x2', e.clientX - pRect.left);
+        tempLine.setAttribute('y2', e.clientY - pRect.top);
+      });
+
+      window.addEventListener('pointerup', (e) => {
+        if (!selectedNode || !tempLine) return;
+
+        const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.node');
+
+        if (target && target.dataset.side === 'right' && target.dataset.color === selectedNode.dataset.color) {
+          const pRect = panel.getBoundingClientRect();
+          const tRect = target.getBoundingClientRect();
+          tempLine.setAttribute('x2', tRect.left - pRect.left);
+          tempLine.setAttribute('y2', tRect.top + tRect.height / 2 - pRect.top);
+          completed[selectedNode.dataset.color] = true;
+          playBeep(520, 'sine', 0.1);
+
+          checkWin();
+        } else {
+          tempLine.remove();
         }
-        activeStart = slot;
-        slot.classList.add('selected');
-        const pos = getCenter(slot);
-        liveWire = drawLine(pos, pos, slot.dataset.hex, true);
-        slot.setPointerCapture(e.pointerId);
-      });
 
-      slot.addEventListener('pointermove', (e) => {
-        if (!liveWire || !activeStart) return;
-        const b = board.getBoundingClientRect();
-        const start = getCenter(activeStart);
-        const cur = { x: e.clientX - b.left, y: e.clientY - b.top };
-        const dx = (cur.x - start.x) * 0.45;
-        liveWire.setAttribute('d', `M ${start.x} ${start.y} C ${start.x + dx} ${start.y}, ${cur.x - dx} ${cur.y}, ${cur.x} ${cur.y}`);
-      });
-
-      slot.addEventListener('pointerup', (e) => {
-        if (!activeStart) return;
-        const elem = document.elementFromPoint(e.clientX, e.clientY)?.closest('.slot');
-        if (elem && elem.dataset.side === 'right' && !elem.dataset.done && elem.dataset.color === activeStart.dataset.color) {
-          connectSlots(activeStart, elem);
-        } else if (liveWire) {
-          liveWire.remove(); liveWire = null;
-        }
+        selectedNode = null;
+        tempLine = null;
       });
     }
 
-    async function connectSlots(leftEl, rightEl) {
-      if (liveWire) { liveWire.remove(); liveWire = null; }
-      leftEl.classList.remove('selected');
-      drawLine(getCenter(leftEl), getCenter(rightEl), leftEl.dataset.hex, false);
-      leftEl.dataset.done = 'true'; rightEl.dataset.done = 'true';
-      leftEl.style.pointerEvents = 'none'; rightEl.style.pointerEvents = 'none';
-      activeStart = null;
-      solvedCount++;
-
-      if (solvedCount === COLORS.length) {
-        document.getElementById('status').innerText = "¡TAREA COMPLETADA!";
+    async function checkWin() {
+      if (Object.keys(completed).length === COLORS.length) {
+        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+        playBeep(880, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-        // Registrar terminada y soltar puesto
         await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
         await releaseSession();
       }
-    }
-
-    function cancelActive() {
-      if (liveWire) { liveWire.remove(); liveWire = null; }
-      if (activeStart) { activeStart.classList.remove('selected'); activeStart = null; }
     }
   </script>
 </body>
