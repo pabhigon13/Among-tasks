@@ -32,12 +32,12 @@
     /* Marco panorámico horizontal */
     .gps-frame {
       position: relative;
-      background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 80%, #000 100%);
+      background: radial-gradient(circle at center, #14161a 0%, #090a0d 80%, #000 100%);
       border: 4px solid #ea580c;
       border-radius: 16px;
       width: 100%;
       max-width: 680px;
-      height: 280px;
+      height: 290px;
       overflow: hidden;
       box-shadow: inset 0 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(234, 88, 12, 0.25);
     }
@@ -46,8 +46,8 @@
       position: absolute;
       inset: 0;
       background-image: 
-        linear-gradient(rgba(251, 146, 60, 0.08) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(251, 146, 60, 0.08) 1px, transparent 1px);
+        linear-gradient(rgba(251, 146, 60, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(251, 146, 60, 0.05) 1px, transparent 1px);
       background-size: 26px 26px;
       pointer-events: none;
     }
@@ -89,14 +89,14 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 3;
+      z-index: 5;
       pointer-events: none;
     }
     .waypoint-dot {
       width: 32px;
       height: 32px;
       border-radius: 50%;
-      background: #292524;
+      background: #1c1917;
       border: 2px dashed #fb923c;
       display: flex;
       align-items: center;
@@ -105,6 +105,7 @@
       font-size: 0.8rem;
       color: #fdba74;
       transition: all 0.2s ease;
+      box-shadow: 0 0 6px rgba(0,0,0,0.8);
     }
     .waypoint-node.reached .waypoint-dot {
       background: #ea580c;
@@ -124,8 +125,8 @@
       color: #cbd5e1;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      background: rgba(12, 10, 9, 0.85);
-      border: 1px solid rgba(251, 146, 60, 0.3);
+      background: rgba(12, 10, 9, 0.9);
+      border: 1px solid rgba(251, 146, 60, 0.4);
       padding: 1px 5px;
       border-radius: 3px;
       white-space: nowrap;
@@ -144,11 +145,11 @@
       transform: translate(-50%, -50%);
       z-index: 10;
       cursor: grab;
-      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.85));
+      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.9));
     }
     #car:active {
       cursor: grabbing;
-      filter: drop-shadow(0 0 14px rgba(251, 146, 60, 1));
+      filter: drop-shadow(0 0 16px rgba(251, 146, 60, 1));
     }
 
     #status {
@@ -280,7 +281,6 @@
 
       currentPlayer = name;
 
-      // 1. Ya completada
       const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
@@ -297,7 +297,6 @@
         return;
       }
 
-      // 2. Comprobar ocupación
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -323,7 +322,6 @@
         }
       }
 
-      // 3. Tomar turno
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
@@ -363,7 +361,7 @@
       currentStep = 1;
       isCompleted = false;
 
-      // Puntos de izquierda a derecha con Y aleatoria en intermedios
+      // Puntos con alturas aleatorias
       WAYPOINTS = [
         { x: 10, y: randomBetween(35, 65), name: 'Valencia',    icon: 'START' },
         { x: 36, y: randomBetween(25, 75), name: 'Buñol',       icon: '1' },
@@ -371,43 +369,54 @@
         { x: 90, y: randomBetween(35, 65), name: 'Minglanilla', icon: '🏁' }
       ];
 
-      let pathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
+      let fullPathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i < WAYPOINTS.length; i++) {
-        pathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
+        fullPathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
       }
 
-      // 1. Línea base tenue para asfalto
-      const darkRoad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      darkRoad.setAttribute('d', pathD);
-      darkRoad.setAttribute('stroke', '#292524');
-      darkRoad.setAttribute('stroke-width', '10');
-      darkRoad.setAttribute('stroke-linecap', 'round');
-      darkRoad.setAttribute('stroke-linejoin', 'round');
-      darkRoad.setAttribute('fill', 'none');
-      svg.appendChild(darkRoad);
+      // --- DIBUJO DE LA CARRETERA REAL ---
+      // 1. Bordillo exterior oscuro
+      const roadCurb = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      roadCurb.setAttribute('d', fullPathD);
+      roadCurb.setAttribute('stroke', '#44403c');
+      roadCurb.setAttribute('stroke-width', '24');
+      roadCurb.setAttribute('stroke-linecap', 'round');
+      roadCurb.setAttribute('stroke-linejoin', 'round');
+      roadCurb.setAttribute('fill', 'none');
+      svg.appendChild(roadCurb);
 
-      // 2. Línea discontinua visible para guiar la ruta
-      const guideLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      guideLine.setAttribute('d', pathD);
-      guideLine.setAttribute('stroke', '#fdba74');
-      guideLine.setAttribute('stroke-width', '4');
-      guideLine.setAttribute('stroke-dasharray', '8 6');
-      guideLine.setAttribute('stroke-linecap', 'round');
-      guideLine.setAttribute('fill', 'none');
-      svg.appendChild(guideLine);
+      // 2. Asfalto gris oscuro de la calzada
+      const roadAsphalt = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      roadAsphalt.setAttribute('d', fullPathD);
+      roadAsphalt.setAttribute('stroke', '#1c1917');
+      roadAsphalt.setAttribute('stroke-width', '20');
+      roadAsphalt.setAttribute('stroke-linecap', 'round');
+      roadAsphalt.setAttribute('stroke-linejoin', 'round');
+      roadAsphalt.setAttribute('fill', 'none');
+      svg.appendChild(roadAsphalt);
 
-      // 3. Línea sólida en negrita para tramos completados
-      const boldLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      boldLine.id = 'boldRoad';
-      boldLine.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
-      boldLine.setAttribute('stroke', '#ea580c');
-      boldLine.setAttribute('stroke-width', '10');
-      boldLine.setAttribute('stroke-linecap', 'round');
-      boldLine.setAttribute('stroke-linejoin', 'round');
-      boldLine.setAttribute('fill', 'none');
-      svg.appendChild(boldLine);
+      // 3. Carretera iluminada (tramos completados)
+      const boldRoad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      boldRoad.id = 'boldRoad';
+      boldRoad.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
+      boldRoad.setAttribute('stroke', '#ea580c');
+      boldRoad.setAttribute('stroke-width', '20');
+      boldRoad.setAttribute('stroke-linecap', 'round');
+      boldRoad.setAttribute('stroke-linejoin', 'round');
+      boldRoad.setAttribute('fill', 'none');
+      svg.appendChild(boldRoad);
 
-      // Renderizar nodos
+      // 4. Líneas divisorias de carril (pintura central blanca/amarilla discontinua)
+      const roadDashes = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      roadDashes.setAttribute('d', fullPathD);
+      roadDashes.setAttribute('stroke', '#fef08a');
+      roadDashes.setAttribute('stroke-width', '2');
+      roadDashes.setAttribute('stroke-dasharray', '8 8');
+      roadDashes.setAttribute('stroke-linecap', 'butt');
+      roadDashes.setAttribute('fill', 'none');
+      svg.appendChild(roadDashes);
+
+      // Renderizar nodos de las ciudades
       WAYPOINTS.forEach((wp, idx) => {
         const node = document.createElement('div');
         node.className = 'waypoint-node';
@@ -450,7 +459,7 @@
       const pA = WAYPOINTS[currentStep - 1];
       const pB = WAYPOINTS[currentStep];
 
-      // Proyección matemática sobre el tramo actual
+      // Proyección matemática sobre el carril actual
       const dx = pB.x - pA.x;
       const dy = pB.y - pA.y;
       const lenSq = dx * dx + dy * dy;
@@ -472,7 +481,7 @@
       if (!isDragging || isCompleted) return;
       isDragging = false;
 
-      // Si suelta antes, vuelve al inicio del tramo
+      // Si suelta antes de la meta, vuelve al inicio del tramo
       const prevWp = WAYPOINTS[currentStep - 1];
       car.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
       setCarPos(prevWp.x, prevWp.y);
@@ -487,7 +496,7 @@
       targetNode.classList.remove('target');
       targetNode.classList.add('reached');
 
-      // Extender línea completada en negrita
+      // Iluminar tramo de carretera completado
       let boldD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i <= stepIdx; i++) {
         boldD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
