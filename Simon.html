@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Reactor: Arrancar Reactor (Simon Dice)</title>
+  <title>Reactor: Simon Dice</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -26,14 +26,14 @@
       align-items: center;
       overflow: hidden;
     }
-    h2 { margin: 0 0 0.2rem 0; color: #38bdf8; letter-spacing: 2px; font-size: 1.3rem; }
+    h2 { margin: 0 0 0.2rem 0; color: #a855f7; letter-spacing: 2px; font-size: 1.4rem; }
     p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
 
     /* Indicador de 5 rondas */
     .round-indicators {
       display: flex;
-      gap: 8px;
-      margin-bottom: 1rem;
+      gap: 10px;
+      margin-bottom: 1.2rem;
     }
     .round-dot {
       width: 14px;
@@ -41,94 +41,64 @@
       border-radius: 50%;
       background: #1e293b;
       border: 2px solid #475569;
-      transition: background 0.2s, border-color 0.2s;
+      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
     }
     .round-dot.active {
-      background: #22c55e;
-      border-color: #4ade80;
-      box-shadow: 0 0 8px #22c55e;
+      background: #a855f7;
+      border-color: #c084fc;
+      box-shadow: 0 0 10px #a855f7;
     }
 
-    .main-deck {
-      display: flex;
-      gap: 1.2rem;
-      background: #1a1f2c;
+    /* Tablero 2x2 */
+    .simon-board {
+      background: #161922;
       border: 4px solid #334155;
-      border-radius: 14px;
+      border-radius: 20px;
       padding: 1.2rem;
+      display: grid;
+      grid-template-columns: repeat(2, 110px);
+      gap: 14px;
       box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
     }
 
-    .panel-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .panel-label {
-      font-size: 0.75rem;
-      color: #64748b;
-      font-weight: bold;
-      letter-spacing: 1px;
-      margin-bottom: 0.5rem;
-    }
-
-    .grid-3x3 {
-      display: grid;
-      grid-template-columns: repeat(3, 44px);
-      gap: 6px;
-      background: #0f172a;
-      padding: 8px;
-      border-radius: 8px;
-      border: 2px solid #1e293b;
-    }
-
-    /* Pantalla izquierda (observar) */
-    .screen-light {
-      width: 44px;
-      height: 44px;
-      background: #020617;
-      border-radius: 6px;
-      border: 2px solid #1e293b;
-      transition: background 0.1s, box-shadow 0.1s;
-    }
-    .screen-light.lit {
-      background: #38bdf8;
-      border-color: #7dd3fc;
-      box-shadow: 0 0 14px #38bdf8;
-    }
-
-    /* Teclado derecho (pulsar) */
-    .key-btn {
-      width: 44px;
-      height: 44px;
-      background: #334155;
-      border-radius: 6px;
-      border: 2px solid #475569;
+    .color-btn {
+      width: 110px;
+      height: 110px;
+      border-radius: 16px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
       cursor: pointer;
       outline: none;
-      box-shadow: 0 3px 0 #1e293b;
-      transition: transform 0.05s, background 0.1s;
+      opacity: 0.35;
+      transition: opacity 0.12s ease, transform 0.08s ease, box-shadow 0.12s ease;
     }
-    .key-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #1e293b;
+    .color-btn:active {
+      transform: scale(0.96);
     }
-    .key-btn.player-press {
-      background: #0284c7;
-      border-color: #38bdf8;
-      box-shadow: 0 0 10px #38bdf8;
-    }
-    .key-btn.error-flash {
+
+    /* Colores en reposo */
+    .btn-green  { background: #22c55e; }
+    .btn-red    { background: #ef4444; }
+    .btn-yellow { background: #eab308; }
+    .btn-blue   { background: #3b82f6; }
+
+    /* Iluminación activa */
+    .btn-green.lit  { opacity: 1; box-shadow: 0 0 25px #22c55e; border-color: #fff; }
+    .btn-red.lit    { opacity: 1; box-shadow: 0 0 25px #ef4444; border-color: #fff; }
+    .btn-yellow.lit { opacity: 1; box-shadow: 0 0 25px #eab308; border-color: #fff; }
+    .btn-blue.lit   { opacity: 1; box-shadow: 0 0 25px #3b82f6; border-color: #fff; }
+
+    .color-btn.error-flash {
+      opacity: 1 !important;
       background: #ef4444 !important;
-      border-color: #f87171 !important;
-      box-shadow: 0 0 12px #ef4444 !important;
+      box-shadow: 0 0 30px #ef4444 !important;
+      border-color: #fff !important;
     }
 
     #turnLabel {
-      margin-top: 1rem;
+      margin-top: 1.2rem;
       font-weight: bold;
       font-size: 0.95rem;
-      color: #f59e0b;
+      color: #c084fc;
       min-height: 1.4rem;
       letter-spacing: 1px;
     }
@@ -141,7 +111,7 @@
       min-height: 1.6rem;
     }
 
-    /* Pantalla de bloqueo y nombres */
+    /* Capa de inicio y bloqueo */
     #overlay {
       position: fixed; inset: 0; background: #0b0d13; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
@@ -151,7 +121,7 @@
       color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff;
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #a855f7; color: #fff;
       border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     .btn-retry {
@@ -166,9 +136,9 @@
 </head>
 <body>
 
-  <!-- Overlay para turnos e identificación -->
+  <!-- Overlay -->
   <div id="overlay">
-    <h2 id="ovTitle" style="color: #38bdf8;">IDENTIFÍCATE</h2>
+    <h2 id="ovTitle" style="color: #a855f7;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
     
     <div id="busyAlert" class="busy-box">
@@ -182,10 +152,10 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>REACTOR</h2>
-  <p>Memoriza la secuencia y repítela en el teclado</p>
+  <h2>REACTOR: SIMON DICE</h2>
+  <p>Memoriza la secuencia de colores y repítela</p>
 
-  <!-- Luces de progreso (5 rondas) -->
+  <!-- Luces de progreso -->
   <div class="round-indicators">
     <div class="round-dot" id="dot-0"></div>
     <div class="round-dot" id="dot-1"></div>
@@ -194,18 +164,12 @@
     <div class="round-dot" id="dot-4"></div>
   </div>
 
-  <div class="main-deck">
-    <!-- Pantalla guía -->
-    <div class="panel-box">
-      <div class="panel-label">PATRÓN</div>
-      <div class="grid-3x3" id="screenGrid"></div>
-    </div>
-
-    <!-- Teclado interactivo -->
-    <div class="panel-box">
-      <div class="panel-label">ENTRADA</div>
-      <div class="grid-3x3" id="keyGrid"></div>
-    </div>
+  <!-- Tablero 2x2 -->
+  <div class="simon-board">
+    <button class="color-btn btn-green" id="btn-0" onclick="handlePlayerTap(0)"></button>
+    <button class="color-btn btn-red" id="btn-1" onclick="handlePlayerTap(1)"></button>
+    <button class="color-btn btn-yellow" id="btn-2" onclick="handlePlayerTap(2)"></button>
+    <button class="color-btn btn-blue" id="btn-3" onclick="handlePlayerTap(3)"></button>
   </div>
 
   <div id="turnLabel">Esperando...</div>
@@ -220,23 +184,22 @@
     let currentPlayer = '';
     let heartbeatTimer = null;
 
-    // Variables de Simon Dice
     const TOTAL_ROUNDS = 5;
+    const FREQS = [330, 440, 550, 660]; // Tonos de los 4 botones
     let sequence = [];
     let currentRound = 0;
     let playerIndex = 0;
-    let isShowingSequence = false;
     let canPlay = false;
 
-    // Generador de audio sintético tipo Among Us
+    // Sonido
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.2) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -246,7 +209,7 @@
 
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
-      document.getElementById('ovTitle').style.color = '#38bdf8';
+      document.getElementById('ovTitle').style.color = '#a855f7';
       document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
       document.getElementById('busyAlert').style.display = 'none';
       const input = document.getElementById('playerName');
@@ -265,7 +228,7 @@
 
       currentPlayer = name;
 
-      // 1. Comprobar si ya la completó
+      // 1. Ya completada
       const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
@@ -282,7 +245,7 @@
         return;
       }
 
-      // 2. Comprobar bloqueo de turno
+      // 2. Comprobar ocupación
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -299,7 +262,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está operando el reactor ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -308,11 +271,11 @@
         }
       }
 
-      // 3. Tomar turno
+      // 3. Tomar posesión
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      initSimonGame();
+      initNewGame();
     }
 
     async function takeSession() {
@@ -333,35 +296,15 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Inicializar tableros
-    function initSimonGame() {
-      const screenGrid = document.getElementById('screenGrid');
-      const keyGrid = document.getElementById('keyGrid');
-      screenGrid.innerHTML = '';
-      keyGrid.innerHTML = '';
-
-      for (let i = 0; i < 9; i++) {
-        const light = document.createElement('div');
-        light.className = 'screen-light';
-        light.id = `light-${i}`;
-        screenGrid.appendChild(light);
-
-        const btn = document.createElement('button');
-        btn.className = 'key-btn';
-        btn.id = `key-${i}`;
-        btn.onclick = () => handlePlayerTap(i);
-        keyGrid.appendChild(btn);
-      }
-
-      // Generar los 5 pasos aleatorios de la secuencia
+    // Lógica Simon
+    function initNewGame() {
       sequence = [];
       for (let i = 0; i < TOTAL_ROUNDS; i++) {
-        sequence.push(Math.floor(Math.random() * 9));
+        sequence.push(Math.floor(Math.random() * 4));
       }
-
       currentRound = 0;
       updateIndicators();
-      setTimeout(playRoundSequence, 800);
+      setTimeout(playSequence, 800);
     }
 
     function updateIndicators() {
@@ -372,55 +315,54 @@
       }
     }
 
-    async function playRoundSequence() {
+    async function playSequence() {
       canPlay = false;
       playerIndex = 0;
-      const turnLabel = document.getElementById('turnLabel');
-      turnLabel.innerText = "OBSERVA EL PATRÓN...";
-      turnLabel.style.color = "#f59e0b";
+      const turn = document.getElementById('turnLabel');
+      turn.innerText = "MEMORIZA LA SECUENCIA...";
+      turn.style.color = "#c084fc";
 
       await sleep(400);
 
       const itemsToShow = sequence.slice(0, currentRound + 1);
-
-      for (let idx of itemsToShow) {
-        flashLight(idx);
-        playBeep(350 + (idx * 45), 'triangle', 0.2);
-        await sleep(450);
+      for (let colorIdx of itemsToShow) {
+        await lightUpButton(colorIdx, 350);
+        await sleep(200);
       }
 
-      turnLabel.innerText = "¡TU TURNO! REPITE LA SECUENCIA";
-      turnLabel.style.color = "#38bdf8";
+      turn.innerText = `TU TURNO (RONDA ${currentRound + 1}/${TOTAL_ROUNDS})`;
+      turn.style.color = "#38bdf8";
       canPlay = true;
     }
 
-    function flashLight(index) {
-      const light = document.getElementById(`light-${index}`);
-      if (!light) return;
-      light.classList.add('lit');
-      setTimeout(() => light.classList.remove('lit'), 300);
+    function lightUpButton(index, duration = 300) {
+      return new Promise(resolve => {
+        const btn = document.getElementById(`btn-${index}`);
+        btn.classList.add('lit');
+        playBeep(FREQS[index], 'triangle', duration / 1000);
+        setTimeout(() => {
+          btn.classList.remove('lit');
+          resolve();
+        }, duration);
+      });
     }
 
     async function handlePlayerTap(index) {
       if (!canPlay) return;
 
-      const key = document.getElementById(`key-${index}`);
-      key.classList.add('player-press');
-      setTimeout(() => key.classList.remove('player-press'), 150);
+      lightUpButton(index, 200);
 
-      // Acierto
       if (index === sequence[playerIndex]) {
-        playBeep(450 + (index * 45), 'sine', 0.15);
         playerIndex++;
 
-        // Completó la ronda actual
+        // Ronda superada
         if (playerIndex > currentRound) {
           canPlay = false;
           currentRound++;
           updateIndicators();
 
           if (currentRound >= TOTAL_ROUNDS) {
-            // Tarea 100% completada
+            // Completado al 100%
             document.getElementById('turnLabel').innerText = '';
             document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
             playBeep(880, 'sine', 0.4);
@@ -430,28 +372,28 @@
             await releaseSession();
           } else {
             // Siguiente ronda
-            document.getElementById('turnLabel').innerText = `¡BIEN! RONDA ${currentRound + 1} DE ${TOTAL_ROUNDS}`;
+            document.getElementById('turnLabel').innerText = '¡BIEN HECHO!';
             document.getElementById('turnLabel').style.color = '#22c55e';
-            await sleep(900);
-            playRoundSequence();
+            await sleep(800);
+            playSequence();
           }
         }
       } else {
-        // Fallo en la secuencia
+        // Fallo: volver a la Ronda 1
         canPlay = false;
-        playBeep(180, 'sawtooth', 0.35);
-        if (navigator.vibrate) navigator.vibrate(250);
+        playBeep(160, 'sawtooth', 0.4);
+        if (navigator.vibrate) navigator.vibrate(300);
 
-        // Parpadear en rojo el teclado
-        document.querySelectorAll('.key-btn').forEach(b => b.classList.add('error-flash'));
-        const turnLabel = document.getElementById('turnLabel');
-        turnLabel.innerText = "¡ERROR! REPITIENDO SECUENCIA...";
-        turnLabel.style.color = "#ef4444";
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.add('error-flash'));
+        const turn = document.getElementById('turnLabel');
+        turn.innerText = "¡ERROR! VUELVES A LA RONDA 1";
+        turn.style.color = "#ef4444";
 
-        await sleep(700);
-        document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('error-flash'));
-        playerIndex = 0;
-        playRoundSequence();
+        await sleep(800);
+        document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('error-flash'));
+
+        // Reinicio completo desde ronda 1
+        initNewGame();
       }
     }
 
