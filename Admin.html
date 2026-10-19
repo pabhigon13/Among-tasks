@@ -6,118 +6,269 @@
   <title>Panel de Control - Admin Among Us</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 1.5rem; margin: 0; }
-    h1 { color: #f59e0b; margin-bottom: 0.2rem; }
-    .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 1.5rem; }
-    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 260px; padding: 1.2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .counter { font-size: 2.5rem; font-weight: bold; margin: 0.3rem 0; }
-    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 130px; overflow-y: auto; }
-    li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .btn-reset { background: #ef4444; color: white; border: none; padding: 0.7rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+    body { background: #0b0d13; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 1.2rem; margin: 0; }
+    h1 { color: #f59e0b; margin: 0 0 0.2rem 0; font-size: 1.8rem; letter-spacing: 2px; }
+    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem; }
+
+    .admin-container { max-width: 1150px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    /* Barra superior de progreso global */
+    .overview-card {
+      background: #161b26; border: 2px solid #334155; border-radius: 14px; padding: 1.2rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: left;
+    }
+    .overview-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .progress-track {
+      width: 100%; height: 16px; background: #000; border-radius: 8px; border: 1px solid #1e293b;
+      overflow: hidden; margin-top: 0.8rem;
+    }
+    .progress-fill {
+      height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #22c55e);
+      box-shadow: 0 0 12px #22c55e; transition: width 0.3s ease;
+    }
+    .crew-input-box { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; }
+    .crew-input {
+      width: 55px; padding: 0.3rem; border-radius: 6px; border: 1px solid #475569;
+      background: #0f172a; color: #fff; text-align: center; font-weight: bold;
+    }
+
+    /* Módulo del Impostor: Sabotajes + Radar */
+    .impostor-monitor {
+      background: #1c0a0f; border: 2px solid #7f1d1d; border-radius: 14px; padding: 1.2rem;
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.15); text-align: left;
+    }
+    .monitor-title { font-size: 1.1rem; font-weight: 900; color: #f87171; letter-spacing: 1px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+
+    .sabotage-deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 1.2rem; }
+    .sabotage-pill {
+      background: #0d0305; border: 2px solid #3f1118; border-radius: 10px; padding: 0.8rem;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .sabotage-pill.active {
+      border-color: #facc15; background: rgba(234, 179, 8, 0.15);
+      animation: alertPulse 1s infinite alternate;
+    }
+    .btn-stop-sab {
+      background: #ef4444; color: #fff; border: none; padding: 0.3rem 0.6rem; border-radius: 6px;
+      font-size: 0.7rem; font-weight: bold; cursor: pointer;
+    }
+    @keyframes alertPulse { from { box-shadow: 0 0 4px #facc15; } to { box-shadow: 0 0 14px #facc15; } }
+
+    /* Radar de ocupación */
+    .radar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+    .radar-tile {
+      background: #0f0407; border: 1px solid #2b0b12; border-radius: 8px; padding: 0.6rem;
+      display: flex; flex-direction: column; gap: 3px; font-size: 0.75rem;
+    }
+    .radar-tile.busy { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); }
+
+    /* Rejilla de tareas clásicas */
+    .tasks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
+    .card {
+      background: #161b26; border: 2px solid #334155; border-radius: 12px; padding: 1.1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.4); text-align: left;
+    }
+    .counter { font-size: 2.2rem; font-weight: bold; margin: 0.2rem 0; }
+    ul { list-style: none; padding: 0; margin: 0.8rem 0; max-height: 120px; overflow-y: auto; }
+    li {
+      background: #242c3d; margin-bottom: 0.35rem; padding: 0.45rem 0.7rem; border-radius: 6px;
+      display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;
+    }
+    .btn-reset {
+      background: #ef4444; color: white; border: none; padding: 0.6rem; border-radius: 8px;
+      font-weight: bold; cursor: pointer; width: 100%; font-size: 0.85rem;
+    }
     .btn-reset:active { background: #b91c1c; }
-    .btn-all { background: #dc2626; color: white; border: none; padding: 1rem 2rem; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 2rem; }
-    #statusInfo { font-size: 0.85rem; color: #22c55e; margin-top: 1rem; }
+    .btn-all {
+      background: #dc2626; color: white; border: none; padding: 1rem 2.2rem; border-radius: 10px;
+      font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 1rem;
+    }
   </style>
 </head>
 <body>
 
-  <h1>SALA DE CONTROL</h1>
-  <p style="color: #64748b; margin: 0;">Supervisión de la partida en vivo</p>
-  
-  <div class="grid">
-    <!-- Cables -->
-    <div class="card">
-      <h2 style="margin: 0; color: #f59e0b; font-size: 1.05rem;">⚡ Cables (Electricidad)</h2>
-      <div id="countCables" class="counter" style="color: #22c55e;">0</div>
-      <ul id="listCables"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('cables')">Reiniciar Cables</button>
+  <h1>SALA DE CONTROL GENERAL</h1>
+  <div class="subtitle">Supervisión en vivo de tripulantes y terminal del impostor</div>
+
+  <div class="admin-container">
+
+    <!-- Progreso Global -->
+    <div class="overview-card">
+      <div class="overview-header">
+        <div>
+          <strong style="color: #22c55e; font-size: 1.1rem;">PROGRESO TOTAL DE TAREAS</strong>
+          <div id="tasksSummaryText" style="color: #94a3b8; font-size: 0.8rem; margin-top: 2px;">Cargando datos...</div>
+        </div>
+        <div class="crew-input-box">
+          <span>Tripulantes:</span>
+          <input id="adminCrewCount" class="crew-input" type="number" min="1" max="20" value="4" onchange="updateCrewCount()" />
+          <span id="percentBadge" style="color: #22c55e; font-size: 1.2rem; font-weight: 900; margin-left: 10px;">0%</span>
+        </div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="adminProgressBar"></div>
+      </div>
     </div>
 
-    <!-- Números -->
-    <div class="card">
-      <h2 style="margin: 0; color: #38bdf8; font-size: 1.05rem;">🔢 Números (Reactor)</h2>
-      <div id="countNumeros" class="counter" style="color: #38bdf8;">0</div>
-      <ul id="listNumeros"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('numeros')">Reiniciar Números</button>
+    <!-- Módulo de espionaje del Impostor -->
+    <div class="impostor-monitor">
+      <div class="monitor-title">
+        <span>🕵️ RADAR Y MONITOR DEL IMPOSTOR</span>
+        <span id="impostorSessionBadge" style="font-size: 0.75rem; color: #94a3b8;">Sin impostor conectado</span>
+      </div>
+
+      <!-- Estado de Sabotajes -->
+      <div style="font-size: 0.75rem; color: #fca5a5; font-weight: bold; margin-bottom: 0.4rem; letter-spacing: 1px;">SABOTAJES ACTIVOS:</div>
+      <div class="sabotage-deck">
+        <div class="sabotage-pill" id="pillLuces">
+          <div>
+            <strong>💡 Luces</strong>
+            <div id="statusLuces" style="font-size: 0.75rem; color: #64748b;">Normal</div>
+          </div>
+          <button class="btn-stop-sab" onclick="forceFixSabotage('luces')">Reparar</button>
+        </div>
+
+        <div class="sabotage-pill" id="pillFuga">
+          <div>
+            <strong>☣️ Fuga de Gas</strong>
+            <div id="statusFuga" style="font-size: 0.75rem; color: #64748b;">Normal</div>
+          </div>
+          <button class="btn-stop-sab" onclick="forceFixSabotage('fuga')">Reparar</button>
+        </div>
+
+        <div class="sabotage-pill" id="pillControles">
+          <div>
+            <strong>🌀 Invertir Controles</strong>
+            <div id="statusControles" style="font-size: 0.75rem; color: #64748b;">Normal</div>
+          </div>
+          <button class="btn-stop-sab" onclick="forceFixSabotage('controles')">Reparar</button>
+        </div>
+      </div>
+
+      <!-- Radar de Ocupación -->
+      <div style="font-size: 0.75rem; color: #fca5a5; font-weight: bold; margin-bottom: 0.4rem; letter-spacing: 1px;">UBICACIÓN DE JUGADORES:</div>
+      <div class="radar-grid" id="adminRadarGrid"></div>
     </div>
 
-    <!-- Simon Dice -->
-    <div class="card">
-      <h2 style="margin: 0; color: #a855f7; font-size: 1.05rem;">🧠 Simon Dice (Reactor)</h2>
-      <div id="countSimon" class="counter" style="color: #a855f7;">0</div>
-      <ul id="listSimon"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('simon')">Reiniciar Simon</button>
+    <!-- Tareas individuales -->
+    <div class="tasks-grid">
+      <div class="card">
+        <h2 style="margin: 0; color: #f59e0b; font-size: 1.05rem;">⚡ Cables</h2>
+        <div id="countCables" class="counter" style="color: #22c55e;">0</div>
+        <ul id="listCables"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('cables')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #38bdf8; font-size: 1.05rem;">🔢 Números</h2>
+        <div id="countNumeros" class="counter" style="color: #38bdf8;">0</div>
+        <ul id="listNumeros"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('numeros')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #a855f7; font-size: 1.05rem;">🧠 Simon Dice</h2>
+        <div id="countSimon" class="counter" style="color: #a855f7;">0</div>
+        <ul id="listSimon"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('simon')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #fb923c; font-size: 1.05rem;">🚗 Conducción</h2>
+        <div id="countCond" class="counter" style="color: #fb923c;">0</div>
+        <ul id="listCond"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('conduccion')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #f43f5e; font-size: 1.05rem;">🪪 Pasar DNI</h2>
+        <div id="countDni" class="counter" style="color: #f43f5e;">0</div>
+        <ul id="listDni"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('dni')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #a3e635; font-size: 1.05rem;">🧮 Operación</h2>
+        <div id="countOp" class="counter" style="color: #a3e635;">0</div>
+        <ul id="listOp"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('operacion')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #ff2a2a; font-size: 1.05rem;">🍻 Cascada</h2>
+        <div id="countCascada" class="counter" style="color: #ff2a2a;">0</div>
+        <ul id="listCascada"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('cascada')">Reiniciar</button>
+      </div>
+
+      <div class="card">
+        <h2 style="margin: 0; color: #d97706; font-size: 1.05rem;">🪳 Cucarachas</h2>
+        <div id="countCucarachas" class="counter" style="color: #d97706;">0</div>
+        <ul id="listCucarachas"><li>Cargando...</li></ul>
+        <button class="btn-reset" onclick="resetTask('cucarachas')">Reiniciar</button>
+      </div>
     </div>
 
-    <!-- Conducción -->
-    <div class="card">
-      <h2 style="margin: 0; color: #fb923c; font-size: 1.05rem;">🚗 Conducción (A-3)</h2>
-      <div id="countCond" class="counter" style="color: #fb923c;">0</div>
-      <ul id="listCond"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('conduccion')">Reiniciar Conducción</button>
+    <div>
+      <button class="btn-all" onclick="resetAll()">REINICIAR TODA LA PARTIDA</button>
+      <div style="font-size: 0.8rem; color: #22c55e; margin-top: 0.8rem;">Conectado a Supabase en tiempo real (3s)</div>
     </div>
 
-    <!-- DNI -->
-    <div class="card">
-      <h2 style="margin: 0; color: #f43f5e; font-size: 1.05rem;">🪪 Pasar DNI (Admin)</h2>
-      <div id="countDni" class="counter" style="color: #f43f5e;">0</div>
-      <ul id="listDni"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('dni')">Reiniciar DNI</button>
-    </div>
-
-    <!-- Operación -->
-    <div class="card">
-      <h2 style="margin: 0; color: #a3e635; font-size: 1.05rem;">🧮 Operación (Cálculo)</h2>
-      <div id="countOp" class="counter" style="color: #a3e635;">0</div>
-      <ul id="listOp"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('operacion')">Reiniciar Operación</button>
-    </div>
-
-    <!-- Cascada -->
-    <div class="card">
-      <h2 style="margin: 0; color: #ff2a2a; font-size: 1.05rem;">🍻 Cascada (Almacén)</h2>
-      <div id="countCascada" class="counter" style="color: #ff2a2a;">0</div>
-      <ul id="listCascada"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('cascada')">Reiniciar Cascada</button>
-    </div>
-
-    <!-- Cucarachas -->
-    <div class="card">
-      <h2 style="margin: 0; color: #d97706; font-size: 1.05rem;">🪳 Cucarachas (Cocina)</h2>
-      <div id="countCucarachas" class="counter" style="color: #d97706;">0</div>
-      <ul id="listCucarachas"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
-      <button class="btn-reset" onclick="resetTask('cucarachas')">Reiniciar Cucarachas</button>
-    </div>
   </div>
-
-  <button class="btn-all" onclick="resetAll()">REINICIAR TODAS LAS TAREAS</button>
-  <div id="statusInfo">Conectado en vivo (actualizando cada 3s)</div>
 
   <script>
     const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function loadStats() {
-      const { data } = await client
-        .from('completed_tasks')
-        .select('*')
-        .order('completed_at', { ascending: false });
+    let crewCount = 4;
 
-      if (!data) return;
+    const ALL_TASKS = [
+      { id: 'cables', name: '⚡ Cables', countId: 'countCables', listId: 'listCables' },
+      { id: 'numeros', name: '🔢 Números', countId: 'countNumeros', listId: 'listNumeros' },
+      { id: 'simon', name: '🧠 Simon', countId: 'countSimon', listId: 'listSimon' },
+      { id: 'conduccion', name: '🚗 Conducción', countId: 'countCond', listId: 'listCond' },
+      { id: 'dni', name: '🪪 DNI', countId: 'countDni', listId: 'listDni' },
+      { id: 'operacion', name: '🧮 Operación', countId: 'countOp', listId: 'listOp' },
+      { id: 'cascada', name: '🍻 Cascada', countId: 'countCascada', listId: 'listCascada' },
+      { id: 'cucarachas', name: '🪳 Cucarachas', countId: 'countCucarachas', listId: 'listCucarachas' }
+    ];
 
-      renderTask(data.filter(t => t.task_name === 'cables'), 'countCables', 'listCables');
-      renderTask(data.filter(t => t.task_name === 'numeros'), 'countNumeros', 'listNumeros');
-      renderTask(data.filter(t => t.task_name === 'simon'), 'countSimon', 'listSimon');
-      renderTask(data.filter(t => t.task_name === 'conduccion'), 'countCond', 'listCond');
-      renderTask(data.filter(t => t.task_name === 'dni'), 'countDni', 'listDni');
-      renderTask(data.filter(t => t.task_name === 'operacion'), 'countOp', 'listOp');
-      renderTask(data.filter(t => t.task_name === 'cascada'), 'countCascada', 'listCascada');
-      renderTask(data.filter(t => t.task_name === 'cucarachas'), 'countCucarachas', 'listCucarachas');
+    function updateCrewCount() {
+      const val = parseInt(document.getElementById('adminCrewCount').value, 10);
+      if (val > 0) crewCount = val;
+      loadAll();
+    }
+
+    async function loadAll() {
+      // 1. Tareas completadas
+      const { data: doneData } = await client.from('completed_tasks').select('*').order('completed_at', { ascending: false });
+
+      if (doneData) {
+        ALL_TASKS.forEach(t => {
+          renderTask(doneData.filter(i => i.task_name === t.id), t.countId, t.listId);
+        });
+
+        const totalTasksPossible = crewCount * ALL_TASKS.length;
+        const totalCompleted = doneData.length;
+        const percent = Math.min(100, Math.round((totalCompleted / totalTasksPossible) * 100));
+
+        document.getElementById('adminProgressBar').style.width = `${percent}%`;
+        document.getElementById('percentBadge').innerText = `${percent}%`;
+        document.getElementById('tasksSummaryText').innerText = `${totalCompleted}/${totalTasksPossible} tareas completadas (${crewCount} tripulantes)`;
+      }
+
+      // 2. Sesiones activas (Radar + Estado Impostor)
+      const { data: sessions } = await client.from('active_sessions').select('*');
+      renderRadarAndSessions(sessions || []);
+
+      // 3. Sabotajes
+      const { data: sabs } = await client.from('sabotages').select('*');
+      renderSabotages(sabs || []);
     }
 
     function renderTask(items, countId, listId) {
-      document.getElementById(countId).innerText = items.length;
+      document.getElementById(countId).innerText = `${items.length}/${crewCount}`;
       const list = document.getElementById(listId);
       list.innerHTML = '';
       if (items.length === 0) {
@@ -127,25 +278,105 @@
       items.forEach(item => {
         const li = document.createElement('li');
         const hora = new Date(item.completed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        li.innerHTML = `<span>🧑‍🚀 <b>${item.player_name}</b></span><span style="color:#94a3b8; font-size:0.8rem;">${hora}</span>`;
+        li.innerHTML = `<span>🧑‍🚀 <b>${item.player_name}</b></span><span style="color:#94a3b8; font-size:0.75rem;">${hora}</span>`;
         list.appendChild(li);
       });
     }
 
+    function renderRadarAndSessions(sessions) {
+      const grid = document.getElementById('adminRadarGrid');
+      grid.innerHTML = '';
+      const now = Date.now();
+
+      // Comprobar si el impostor está online
+      const impSession = sessions.find(s => s.task_name === 'impostor_terminal');
+      const badge = document.getElementById('impostorSessionBadge');
+      if (impSession) {
+        const diff = (now - new Date(impSession.last_heartbeat).getTime()) / 1000;
+        if (diff < 12) {
+          badge.innerText = `🔴 Impostor conectado: ${impSession.player_name}`;
+          badge.style.color = '#ef4444';
+        } else {
+          badge.innerText = '⚪ Impostor desconectado';
+          badge.style.color = '#94a3b8';
+        }
+      } else {
+        badge.innerText = '⚪ Impostor desconectado';
+        badge.style.color = '#94a3b8';
+      }
+
+      // Radar de las 8 tareas
+      ALL_TASKS.forEach(t => {
+        const sess = sessions.find(s => s.task_name === t.id);
+        let busy = false;
+        let player = '';
+
+        if (sess) {
+          const diff = (now - new Date(sess.last_heartbeat).getTime()) / 1000;
+          if (diff < 12) {
+            busy = true;
+            player = sess.player_name;
+          }
+        }
+
+        const el = document.createElement('div');
+        el.className = `radar-tile ${busy ? 'busy' : ''}`;
+        el.innerHTML = `
+          <strong>${t.name}</strong>
+          <span style="color:${busy ? '#ef4444' : '#22c55e'}; font-weight:bold;">
+            ${busy ? player : 'Libre'}
+          </span>
+        `;
+        grid.appendChild(el);
+      });
+    }
+
+    function renderSabotages(sabs) {
+      updateSabPill('luces', 'pillLuces', 'statusLuces', sabs);
+      updateSabPill('fuga', 'pillFuga', 'statusFuga', sabs);
+      updateSabPill('controles', 'pillControles', 'statusControles', sabs);
+    }
+
+    function updateSabPill(id, pillId, statusId, sabs) {
+      const sab = sabs.find(s => s.id === id);
+      const pill = document.getElementById(pillId);
+      const label = document.getElementById(statusId);
+
+      if (sab && sab.active) {
+        pill.classList.add('active');
+        label.innerText = '⚠️ ACTIVO';
+        label.style.color = '#facc15';
+      } else {
+        pill.classList.remove('active');
+        label.innerText = 'Normal';
+        label.style.color = '#64748b';
+      }
+    }
+
+    async function forceFixSabotage(sabId) {
+      await client.from('sabotages').upsert({
+        id: sabId,
+        active: false,
+        fixed_by: 'ADMIN'
+      });
+      loadAll();
+    }
+
     async function resetTask(name) {
-      if (!confirm(`¿Reiniciar la tarea ${name}?`)) return;
+      if (!confirm(`¿Reiniciar ${name}?`)) return;
       await client.from('completed_tasks').delete().eq('task_name', name);
-      loadStats();
+      loadAll();
     }
 
     async function resetAll() {
-      if (!confirm('¿Reiniciar TODAS las tareas para una nueva ronda?')) return;
+      if (!confirm('¿Reiniciar TODA la partida (tareas y sabotajes)?')) return;
       await client.from('completed_tasks').delete().neq('id', 0);
-      loadStats();
+      await client.from('sabotages').update({ active: false }).neq('id', '');
+      loadAll();
     }
 
-    loadStats();
-    setInterval(loadStats, 3000);
+    loadAll();
+    setInterval(loadAll, 3000);
   </script>
 </body>
 </html>
