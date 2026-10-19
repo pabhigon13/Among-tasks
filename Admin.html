@@ -407,6 +407,8 @@
       await client.from('completed_tasks').delete().neq('id', 0);
       await client.from('sabotages').update({ active: false }).neq('id', '');
       await client.from('game_meetings').upsert({ id: 'current', active: false, reported_by: null });
+      await client.from('active_sessions').delete().neq('id', 0);
+      // Borra todos los jugadores registrados: esto activa la expulsión inmediata a Home.html
       await client.from('game_players').delete().neq('id', 0);
       loadAll();
     }
