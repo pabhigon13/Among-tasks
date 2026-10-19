@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Reactor: Arrancar Reactor (Simon Dice)</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #0b0d13;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #38bdf8; letter-spacing: 2px; font-size: 1.3rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Indicador de 5 rondas */
+    .round-indicators {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 1rem;
+    }
+    .round-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 2px solid #475569;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .round-dot.active {
+      background: #22c55e;
+      border-color: #4ade80;
+      box-shadow: 0 0 8px #22c55e;
+    }
+
+    .main-deck {
+      display: flex;
+      gap: 1.2rem;
+      background: #1a1f2c;
+      border: 4px solid #334155;
+      border-radius: 14px;
+      padding: 1.2rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+    }
+
+    .panel-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .panel-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      font-weight: bold;
+      letter-spacing: 1px;
+      margin-bottom: 0.5rem;
+    }
+
+    .grid-3x3 {
+      display: grid;
+      grid-template-columns: repeat(3, 44px);
+      gap: 6px;
+      background: #0f172a;
+      padding: 8px;
+      border-radius: 8px;
+      border: 2px solid #1e293b;
+    }
+
+    /* Pantalla izquierda (observar) */
+    .screen-light {
+      width: 44px;
+      height: 44px;
+      background: #020617;
+      border-radius: 6px;
+      border: 2px solid #1e293b;
+      transition: background 0.1s, box-shadow 0.1s;
+    }
+    .screen-light.lit {
+      background: #38bdf8;
+      border-color: #7dd3fc;
+      box-shadow: 0 0 14px #38bdf8;
+    }
+
+    /* Teclado derecho (pulsar) */
+    .key-btn {
+      width: 44px;
+      height: 44px;
+      background: #334155;
+      border-radius: 6px;
+      border: 2px solid #475569;
+      cursor: pointer;
+      outline: none;
+      box-shadow: 0 3px 0 #1e293b;
+      transition: transform 0.05s, background 0.1s;
+    }
+    .key-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #1e293b;
+    }
+    .key-btn.player-press {
+      background: #0284c7;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px #38bdf8;
+    }
+    .key-btn.error-flash {
+      background: #ef4444 !important;
+      border-color: #f87171 !important;
+      box-shadow: 0 0 12px #ef4444 !important;
+    }
+
+    #turnLabel {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 0.95rem;
+      color: #f59e0b;
+      min-height: 1.4rem;
+      letter-spacing: 1px;
+    }
+
+    #status {
+      margin-top: 0.4rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+    }
+
+    /* Pantalla de bloqueo y nombres */
+    #overlay {
+      position: fixed; inset: 0; background: #0b0d13; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para turnos e identificación -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #38bdf8;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>REACTOR</h2>
+  <p>Memoriza la secuencia y repítela en el teclado</p>
+
+  <!-- Luces de progreso (5 rondas) -->
+  <div class="round-indicators">
+    <div class="round-dot" id="dot-0"></div>
+    <div class="round-dot" id="dot-1"></div>
+    <div class="round-dot" id="dot-2"></div>
+    <div class="round-dot" id="dot-3"></div>
+    <div class="round-dot" id="dot-4"></div>
+  </div>
+
+  <div class="main-deck">
+    <!-- Pantalla guía -->
+    <div class="panel-box">
+      <div class="panel-label">PATRÓN</div>
+      <div class="grid-3x3" id="screenGrid"></div>
+    </div>
+
+    <!-- Teclado interactivo -->
+    <div class="panel-box">
+      <div class="panel-label">ENTRADA</div>
+      <div class="grid-3x3" id="keyGrid"></div>
+    </div>
+  </div>
+
+  <div id="turnLabel">Esperando...</div>
+  <div id="status"></div>
+
+  <script>
+    const TASK_ID = 'simon';
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    // Variables de Simon Dice
+    const TOTAL_ROUNDS = 5;
+    let sequence = [];
+    let currentRound = 0;
+    let playerIndex = 0;
+    let isShowingSequence = false;
+    let canPlay = false;
+
+    // Generador de audio sintético tipo Among Us
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#38bdf8';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      // 1. Comprobar si ya la completó
+      const { data: doneData } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', TASK_ID);
+
+      if (doneData && doneData.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+        return;
+      }
+
+      // 2. Comprobar bloqueo de turno
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está operando el reactor ahora mismo.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      // 3. Tomar turno
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+      initSimonGame();
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Inicializar tableros
+    function initSimonGame() {
+      const screenGrid = document.getElementById('screenGrid');
+      const keyGrid = document.getElementById('keyGrid');
+      screenGrid.innerHTML = '';
+      keyGrid.innerHTML = '';
+
+      for (let i = 0; i < 9; i++) {
+        const light = document.createElement('div');
+        light.className = 'screen-light';
+        light.id = `light-${i}`;
+        screenGrid.appendChild(light);
+
+        const btn = document.createElement('button');
+        btn.className = 'key-btn';
+        btn.id = `key-${i}`;
+        btn.onclick = () => handlePlayerTap(i);
+        keyGrid.appendChild(btn);
+      }
+
+      // Generar los 5 pasos aleatorios de la secuencia
+      sequence = [];
+      for (let i = 0; i < TOTAL_ROUNDS; i++) {
+        sequence.push(Math.floor(Math.random() * 9));
+      }
+
+      currentRound = 0;
+      updateIndicators();
+      setTimeout(playRoundSequence, 800);
+    }
+
+    function updateIndicators() {
+      for (let i = 0; i < TOTAL_ROUNDS; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentRound) dot.classList.add('active');
+        else dot.classList.remove('active');
+      }
+    }
+
+    async function playRoundSequence() {
+      canPlay = false;
+      playerIndex = 0;
+      const turnLabel = document.getElementById('turnLabel');
+      turnLabel.innerText = "OBSERVA EL PATRÓN...";
+      turnLabel.style.color = "#f59e0b";
+
+      await sleep(400);
+
+      const itemsToShow = sequence.slice(0, currentRound + 1);
+
+      for (let idx of itemsToShow) {
+        flashLight(idx);
+        playBeep(350 + (idx * 45), 'triangle', 0.2);
+        await sleep(450);
+      }
+
+      turnLabel.innerText = "¡TU TURNO! REPITE LA SECUENCIA";
+      turnLabel.style.color = "#38bdf8";
+      canPlay = true;
+    }
+
+    function flashLight(index) {
+      const light = document.getElementById(`light-${index}`);
+      if (!light) return;
+      light.classList.add('lit');
+      setTimeout(() => light.classList.remove('lit'), 300);
+    }
+
+    async function handlePlayerTap(index) {
+      if (!canPlay) return;
+
+      const key = document.getElementById(`key-${index}`);
+      key.classList.add('player-press');
+      setTimeout(() => key.classList.remove('player-press'), 150);
+
+      // Acierto
+      if (index === sequence[playerIndex]) {
+        playBeep(450 + (index * 45), 'sine', 0.15);
+        playerIndex++;
+
+        // Completó la ronda actual
+        if (playerIndex > currentRound) {
+          canPlay = false;
+          currentRound++;
+          updateIndicators();
+
+          if (currentRound >= TOTAL_ROUNDS) {
+            // Tarea 100% completada
+            document.getElementById('turnLabel').innerText = '';
+            document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+            playBeep(880, 'sine', 0.4);
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+            await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+            await releaseSession();
+          } else {
+            // Siguiente ronda
+            document.getElementById('turnLabel').innerText = `¡BIEN! RONDA ${currentRound + 1} DE ${TOTAL_ROUNDS}`;
+            document.getElementById('turnLabel').style.color = '#22c55e';
+            await sleep(900);
+            playRoundSequence();
+          }
+        }
+      } else {
+        // Fallo en la secuencia
+        canPlay = false;
+        playBeep(180, 'sawtooth', 0.35);
+        if (navigator.vibrate) navigator.vibrate(250);
+
+        // Parpadear en rojo el teclado
+        document.querySelectorAll('.key-btn').forEach(b => b.classList.add('error-flash'));
+        const turnLabel = document.getElementById('turnLabel');
+        turnLabel.innerText = "¡ERROR! REPITIENDO SECUENCIA...";
+        turnLabel.style.color = "#ef4444";
+
+        await sleep(700);
+        document.querySelectorAll('.key-btn').forEach(b => b.classList.remove('error-flash'));
+        playerIndex = 0;
+        playRoundSequence();
+      }
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  </script>
+</body>
+</html>
