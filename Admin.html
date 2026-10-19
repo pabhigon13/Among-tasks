@@ -9,7 +9,7 @@
     body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 1.5rem; margin: 0; }
     h1 { color: #f59e0b; margin-bottom: 0.2rem; }
     .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 1.5rem; }
-    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 270px; padding: 1.2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 260px; padding: 1.2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .counter { font-size: 2.5rem; font-weight: bold; margin: 0.3rem 0; }
     ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 140px; overflow-y: auto; }
     li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
@@ -72,6 +72,14 @@
       <ul id="listOp"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('operacion')">Reiniciar Operación</button>
     </div>
+
+    <!-- Cascada -->
+    <div class="card">
+      <h2 style="margin: 0; color: #e11d48; font-size: 1.1rem;">🍻 Cascada (Almacén)</h2>
+      <div id="countCascada" class="counter" style="color: #e11d48;">0</div>
+      <ul id="listCascada"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
+      <button class="btn-reset" onclick="resetTask('cascada')">Reiniciar Cascada</button>
+    </div>
   </div>
 
   <button class="btn-all" onclick="resetAll()">REINICIAR TODAS LAS TAREAS</button>
@@ -96,6 +104,7 @@
       renderTask(data.filter(t => t.task_name === 'conduccion'), 'countCond', 'listCond');
       renderTask(data.filter(t => t.task_name === 'dni'), 'countDni', 'listDni');
       renderTask(data.filter(t => t.task_name === 'operacion'), 'countOp', 'listOp');
+      renderTask(data.filter(t => t.task_name === 'cascada'), 'countCascada', 'listCascada');
     }
 
     function renderTask(items, countId, listId) {
