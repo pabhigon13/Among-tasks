@@ -62,7 +62,7 @@
       to { box-shadow: 0 0 16px #ef4444; }
     }
 
-    /* Osciloscopio con banda objetivo dinámica */
+    /* Osciloscopio con banda objetivo estática por ronda */
     .tuner-display {
       background: #020617;
       border: 2px solid #1e293b;
@@ -90,7 +90,6 @@
       border-left: 2px dashed #22c55e;
       border-right: 2px dashed #22c55e;
       pointer-events: none;
-      transition: left 0.8s ease-in-out;
       box-shadow: inset 0 0 10px rgba(34, 197, 94, 0.3);
     }
     .signal-cursor {
@@ -171,13 +170,13 @@
 
   <div id="overlay">
     <h2 style="color: #38bdf8;">TERMINAL DE CONTROLES</h2>
-    <p>Escribe tu nombre para sintonizar los mandos</p>
+    <p>Escribe tu nombre para calibrar los mandos</p>
     <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
     <button class="overlay-btn" onclick="startTerminal()">Entrar a la Consola</button>
   </div>
 
   <h2>CALIBRACIÓN DE CONTROLES</h2>
-  <p>Mantén la aguja dentro de la zona verde para estabilizar</p>
+  <p>Mantén la aguja fija dentro de la zona verde para estabilizar</p>
 
   <div class="comms-cabinet">
     <div id="screenStatus" class="screen-status danger">
@@ -213,12 +212,9 @@
 
     let currentPlayer = '';
     let isSabotageActive = false;
-    let baseTargetPos = 50; 
-    let currentDriftOffset = 0;
-    let driftStep = 0;
+    let targetPos = 50; // Posición fija asignada para este sabotaje
     let holdCount = 0;
     let holdInterval = null;
-    let driftInterval = null;
     let isFixed = false;
     let lastStartedAt = '';
 
@@ -247,10 +243,9 @@
       checkSabotage();
       setInterval(checkSabotage, 1500);
       holdInterval = setInterval(checkHold, 100);
-      driftInterval = setInterval(updateTargetDrift, 800); // La zona verde oscila cada 800ms
     }
 
-    // Calcula una posición base pseudoaleatoria distinta cada vez que el impostor sabotea
+    // Calcula una posición estática diferente para cada sabotaje nuevo según started_at
     function deriveTargetFromTimestamp(timestampStr) {
       if (!timestampStr) return 50;
       let hash = 0;
@@ -258,7 +253,8 @@
         hash = (hash << 5) - hash + timestampStr.charCodeAt(i);
         hash |= 0;
       }
-      return (Math.abs(hash) % 55) + 20; // Entre 20% y 75% de la pantalla
+      // Devuelve una posición fija entre el 18% y el 78% del dial
+      return (Math.abs(hash) % 61) + 18;
     }
 
     async function checkSabotage() {
@@ -274,31 +270,17 @@
         return;
       }
 
-      // Si es un sabotaje nuevo, recalculamos la zona verde
+      // Si es una nueva activación de sabotaje, colocamos la zona verde fija en una nueva ubicación
       if (!isSabotageActive || sab.started_at !== lastStartedAt) {
         lastStartedAt = sab.started_at;
         isSabotageActive = true;
         isFixed = false;
         holdCount = 0;
-        baseTargetPos = deriveTargetFromTimestamp(sab.started_at);
+        targetPos = deriveTargetFromTimestamp(sab.started_at);
+        document.getElementById('targetBand').style.left = `${targetPos}%`;
         screen.className = 'screen-status danger';
         screen.innerText = '⚠️ CONTROLES INVERTIDOS ⚠️';
-        updateTargetVisual();
       }
-    }
-
-    // Oscilación suave para que la zona verde no se quede quieta
-    function updateTargetDrift() {
-      if (!isSabotageActive || isFixed) return;
-      driftStep += 0.6;
-      // Oscila ±7% alrededor de la posición base
-      currentDriftOffset = Math.sin(driftStep) * 7;
-      updateTargetVisual();
-    }
-
-    function updateTargetVisual() {
-      const finalPos = Math.min(82, Math.max(14, baseTargetPos + currentDriftOffset));
-      document.getElementById('targetBand').style.left = `${finalPos}%`;
     }
 
     function onSliderMove() {
@@ -313,10 +295,9 @@
       if (!isSabotageActive || isFixed) return;
 
       const val = parseInt(document.getElementById('freqSlider').value, 10);
-      const currentTarget = Math.min(82, Math.max(14, baseTargetPos + currentDriftOffset));
 
-      // Margen de tolerancia de captura (±6%)
-      const inRange = Math.abs(val - currentTarget) <= 6;
+      // Margen de tolerancia fijo sobre la posición verde (±6%)
+      const inRange = Math.abs(val - targetPos) <= 6;
 
       if (inRange) {
         holdCount += 5;
