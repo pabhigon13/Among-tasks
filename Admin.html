@@ -30,6 +30,14 @@
       font-weight: 900; font-size: 1.05rem; letter-spacing: 1px; color: #fff;
     }
 
+    /* Cartel de Victoria de Tripulantes en Admin */
+    #adminCrewWinBanner {
+      display: none; background: linear-gradient(90deg, #065f46, #059669);
+      border: 2px solid #34d399; border-radius: 10px; padding: 0.9rem 1.2rem;
+      font-weight: 900; font-size: 1.15rem; letter-spacing: 1px; color: #fff;
+      box-shadow: 0 0 20px rgba(52, 211, 153, 0.4);
+    }
+
     .overview-card {
       background: #161b26; border: 2px solid #334155; border-radius: 14px; padding: 1.2rem;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: left;
@@ -100,6 +108,11 @@
   <div class="subtitle">Supervisión en vivo de tripulantes y terminal del impostor</div>
 
   <div class="admin-container">
+
+    <!-- Cartel Victoria de Tripulantes -->
+    <div id="adminCrewWinBanner">
+      🏆 ¡VICTORIA DE LA TRIPULACIÓN! Todas las tareas requeridas han sido completadas.
+    </div>
 
     <div id="adminMeetingBox">
       <div style="text-align: left;">
@@ -283,6 +296,14 @@
         document.getElementById('adminProgressBar').style.width = `${percent}%`;
         document.getElementById('percentBadge').innerText = `${percent}%`;
         document.getElementById('tasksSummaryText').innerText = `${totalCompleted}/${totalTasksPossible} tareas completadas (${crewCount} tripulantes)`;
+
+        // Cartel superior de victoria de tripulantes
+        const crewWinBanner = document.getElementById('adminCrewWinBanner');
+        if (totalCompleted >= totalTasksPossible && totalTasksPossible > 0) {
+          crewWinBanner.style.display = 'block';
+        } else {
+          crewWinBanner.style.display = 'none';
+        }
       }
 
       const { data: sessions } = await client.from('active_sessions').select('*');
@@ -408,7 +429,6 @@
       await client.from('sabotages').update({ active: false }).neq('id', '');
       await client.from('game_meetings').upsert({ id: 'current', active: false, reported_by: null });
       await client.from('active_sessions').delete().neq('id', 0);
-      // Borra todos los jugadores registrados: esto activa la expulsión inmediata a Home.html
       await client.from('game_players').delete().neq('id', 0);
       loadAll();
     }
