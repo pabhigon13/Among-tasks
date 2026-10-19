@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Terminal del Impostor</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    body {
+      background: #090305;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin: 0 0 0.2rem 0; color: #ef4444; font-size: 1.5rem; letter-spacing: 2px; }
+    p.subtitle { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.82rem; }
+
+    .panel-container {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Overlay inicio/bloqueo sesión única */
+    #overlay {
+      position: fixed; inset: 0; background: #090305; z-index: 100;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ef4444; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+
+    /* Tarjetas de sección */
+    .card {
+      background: #18090d;
+      border: 2px solid #3f1118;
+      border-radius: 12px;
+      padding: 0.9rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+      text-align: left;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #f87171;
+      letter-spacing: 1px;
+      margin-bottom: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Barra de tareas global */
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #000;
+      border-radius: 7px;
+      border: 1px solid #4c0519;
+      overflow: hidden;
+      margin-top: 0.3rem;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #22c55e);
+      box-shadow: 0 0 10px #22c55e;
+      transition: width 0.3s ease;
+    }
+
+    /* Botones de sabotaje */
+    .sabotage-btn {
+      width: 100%;
+      padding: 0.85rem;
+      margin-bottom: 0.6rem;
+      border-radius: 10px;
+      border: 2px solid #ef4444;
+      background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 0 #2b0606;
+      transition: all 0.1s;
+    }
+    .sabotage-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #2b0606;
+    }
+    .sabotage-btn.active-now {
+      border-color: #facc15;
+      background: linear-gradient(180deg, #a16207 0%, #713f12 100%);
+      box-shadow: 0 0 14px #facc15;
+      animation: pulseAlert 1s infinite alternate;
+    }
+    .sabotage-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      border-color: #555;
+      background: #222;
+      box-shadow: none;
+      transform: none;
+    }
+    @keyframes pulseAlert {
+      from { box-shadow: 0 0 6px #facc15; }
+      to { box-shadow: 0 0 18px #facc15; }
+    }
+
+    /* Radar de ocupación */
+    .radar-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      font-size: 0.75rem;
+    }
+    .radar-item {
+      background: #0f0407;
+      border: 1px solid #2b0b12;
+      border-radius: 6px;
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .radar-item.occupied {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+    }
+    .radar-status {
+      font-weight: bold;
+    }
+    .radar-status.free { color: #22c55e; }
+    .radar-status.busy { color: #ef4444; }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para control de acceso (1 impostor simultáneo) -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #ef4444;">TERMINAL DEL IMPOSTOR</h2>
+    <p id="ovDesc">Escribe tu nombre para tomar el control</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Acceder</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar de nuevo</button>
+  </div>
+
+  <div class="panel-container">
+    <div>
+      <h1>TERMINAL DE SABOTAJE</h1>
+      <p class="subtitle">Canal encubierto de interferencia y sabotaje</p>
+    </div>
+
+    <!-- Progreso de Tareas Global -->
+    <div class="card">
+      <div class="card-title">
+        <span>PROGRESO DE TRIPULACIÓN</span>
+        <span id="progressText" style="color:#22c55e;">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+      <div id="tasksCount" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.4rem;">Cargando tareas...</div>
+    </div>
+
+    <!-- Botones de Sabotaje con Cooldowns específicos -->
+    <div class="card">
+      <div class="card-title">
+        <span>SISTEMA DE SABOTAJE</span>
+        <span id="globalStatusLabel" style="color:#22c55e; font-size:0.75rem;">SISTEMAS OPERATIVOS</span>
+      </div>
+
+      <!-- Sabotaje 1: Luces (35s cooldown) -->
+      <button id="btnLuces" class="sabotage-btn" onclick="triggerSabotage('luces')">
+        <span>💡 APAGAR LUCES</span>
+        <span id="badgeLuces" style="font-size:0.75rem;">LISTO</span>
+      </button>
+
+      <!-- Sabotaje 2: Fuga de Gas (60s cooldown - Crítico) -->
+      <button id="btnFuga" class="sabotage-btn" onclick="triggerSabotage('fuga')">
+        <span>☣️ FUGA DE GAS</span>
+        <span id="badgeFuga" style="font-size:0.75rem;">LISTO</span>
+      </button>
+
+      <!-- Sabotaje 3: Invertir Controles (40s cooldown) -->
+      <button id="btnControles" class="sabotage-btn" onclick="triggerSabotage('controles')">
+        <span>🌀 INVERTIR CONTROLES</span>
+        <span id="badgeControles" style="font-size:0.75rem;">LISTO</span>
+      </button>
+    </div>
+
+    <!-- Radar en tiempo real -->
+    <div class="card">
+      <div class="card-title">
+        <span>RADAR DE OCUPACIÓN</span>
+        <span style="font-size:0.7rem; color:#94a3b8;">EN VIVO</span>
+      </div>
+      <div class="radar-list" id="radarGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    const TASK_ID = 'impostor_terminal';
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    // Cooldowns específicos por sabotaje (en segundos)
+    const COOLDOWNS = {
+      luces: 35,
+      fuga: 60,
+      controles: 40
+    };
+
+    // Registro local de cuándo se reparó o activó cada uno
+    const lastFinishedTime = {
+      luces: 0,
+      fuga: 0,
+      controles: 0
+    };
+
+    const ALL_TASKS = [
+      { id: 'cables', name: '⚡ Cables' },
+      { id: 'numeros', name: '🔢 Números' },
+      { id: 'simon', name: '🧠 Simon' },
+      { id: 'conduccion', name: '🚗 Conducción' },
+      { id: 'dni', name: '🪪 DNI' },
+      { id: 'operacion', name: '🧮 Operación' },
+      { id: 'cascada', name: '🍻 Cascada' },
+      { id: 'cucarachas', name: '🪳 Cucarachas' }
+    ];
+
+    let currentSabotages = {};
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'TERMINAL DEL IMPOSTOR';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para tomar el control';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovDesc').innerText = 'Ya hay un impostor conectado al terminal.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} tiene la sesión abierta.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').style.display = 'none';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+
+      // Iniciar bucles de datos y cooldowns
+      pollData();
+      setInterval(pollData, 2500);
+      setInterval(updateCooldownUI, 1000);
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    async function pollData() {
+      // 1. Cargar estado de sabotajes en Supabase
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (sabs) {
+        sabs.forEach(s => {
+          const prev = currentSabotages[s.id];
+          // Si estaba activo y pasa a inactivo, se acaba de reparar: empieza su cooldown
+          if (prev && prev.active && !s.active) {
+            lastFinishedTime[s.id] = Date.now();
+          }
+          currentSabotages[s.id] = s;
+        });
+      }
+
+      // 2. Progreso global
+      const { data: doneTasks } = await client.from('completed_tasks').select('*');
+      if (doneTasks) {
+        const count = doneTasks.length;
+        const percent = Math.min(100, Math.round((count / (ALL_TASKS.length * 2)) * 100));
+        document.getElementById('progressBar').style.width = `${percent}%`;
+        document.getElementById('progressText').innerText = `${percent}%`;
+        document.getElementById('tasksCount').innerText = `${count} tareas completadas en total`;
+      }
+
+      // 3. Radar de ocupación
+      const { data: sessions } = await client.from('active_sessions').select('*');
+      renderRadar(sessions || []);
+    }
+
+    function updateCooldownUI() {
+      const now = Date.now();
+      const anyActive = Object.values(currentSabotages).some(s => s && s.active);
+      const globalLabel = document.getElementById('globalStatusLabel');
+
+      if (anyActive) {
+        globalLabel.innerText = '⚠️ SABOTAJE EN CURSO';
+        globalLabel.style.color = '#facc15';
+      } else {
+        globalLabel.innerText = 'SISTEMAS OPERATIVOS';
+        globalLabel.style.color = '#22c55e';
+      }
+
+      updateSingleButton('luces', 'btnLuces', 'badgeLuces', anyActive, now);
+      updateSingleButton('fuga', 'btnFuga', 'badgeFuga', anyActive, now);
+      updateSingleButton('controles', 'btnControles', 'badgeControles', anyActive, now);
+    }
+
+    function updateSingleButton(sabId, btnId, badgeId, anyActive, now) {
+      const btn = document.getElementById(btnId);
+      const badge = document.getElementById(badgeId);
+      const info = currentSabotages[sabId];
+      const maxCd = COOLDOWNS[sabId];
+      const elapsed = Math.floor((now - lastFinishedTime[sabId]) / 1000);
+      const remaining = maxCd - elapsed;
+
+      // 1. Si este sabotaje concreto está activo
+      if (info && info.active) {
+        btn.classList.add('active-now');
+        btn.disabled = false;
+        badge.innerText = 'EN CURSO';
+        return;
+      }
+
+      btn.classList.remove('active-now');
+
+      // 2. Si hay otro sabotaje activo distinto, queda bloqueado
+      if (anyActive) {
+        btn.disabled = true;
+        badge.innerText = 'BLOQUEADO';
+        return;
+      }
+
+      // 3. Si está en su tiempo de enfriamiento tras repararse
+      if (lastFinishedTime[sabId] > 0 && remaining > 0) {
+        btn.disabled = true;
+        badge.innerText = `${remaining}s`;
+        return;
+      }
+
+      // 4. Completamente disponible
+      btn.disabled = false;
+      badge.innerText = 'LISTO';
+    }
+
+    async function triggerSabotage(sabId) {
+      const info = currentSabotages[sabId];
+      if (info && info.active) return;
+
+      const labels = {
+        luces: 'APAGAR LUCES',
+        fuga: 'FUGA DE GAS (CRÍTICO)',
+        controles: 'INVERTIR CONTROLES'
+      };
+
+      const ok = confirm(`¿Lanzar sabotaje: ${labels[sabId]}?`);
+      if (!ok) return;
+
+      await client.from('sabotages').upsert({
+        id: sabId,
+        active: true,
+        started_at: new Date().toISOString(),
+        fixed_by: null
+      });
+
+      if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
+      pollData();
+    }
+
+    function renderRadar(sessions) {
+      const grid = document.getElementById('radarGrid');
+      grid.innerHTML = '';
+      const now = Date.now();
+
+      ALL_TASKS.forEach(t => {
+        const sess = sessions.find(s => s.task_name === t.id);
+        let isOccupied = false;
+        let occupant = '';
+
+        if (sess) {
+          const secondsAgo = (now - new Date(sess.last_heartbeat).getTime()) / 1000;
+          if (secondsAgo < 12) {
+            isOccupied = true;
+            occupant = sess.player_name;
+          }
+        }
+
+        const el = document.createElement('div');
+        el.className = `radar-item ${isOccupied ? 'occupied' : ''}`;
+        el.innerHTML = `
+          <strong style="color:#f87171;">${t.name}</strong>
+          <span class="radar-status ${isOccupied ? 'busy' : 'free'}">
+            ${isOccupied ? `🔴 ${occupant}` : '🟢 Libre'}
+          </span>
+        `;
+        grid.appendChild(el);
+      });
+    }
+  </script>
+</body>
+</html>
