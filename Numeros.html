@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Reactores: Orden Numérico</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Admin: Orden Numérico</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -13,7 +16,7 @@
       user-select: none;
     }
     body {
-      background: #0b0f19;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
@@ -28,13 +31,12 @@
       transition: transform 0.3s ease;
     }
 
-    /* Sabotaje: Invertir Controles */
     body.inverted-controls {
       transform: scaleX(-1);
       filter: hue-rotate(90deg);
     }
 
-    /* Sabotaje: Banner Fuga de Gas */
+    /* Banners y Overlays de Sabotajes y Reunión */
     #gasAlertBanner {
       display: none;
       position: fixed;
@@ -53,7 +55,6 @@
       to { background: #b91c1c; }
     }
 
-    /* Sabotaje: Pantalla Derrota por Gas a 0s */
     #defeatOverlay {
       display: none;
       position: fixed;
@@ -67,7 +68,6 @@
       padding: 1.5rem;
     }
 
-    /* Sabotaje: Apagón de Luces */
     #lightsBlackout {
       display: none;
       position: fixed;
@@ -81,64 +81,97 @@
       padding: 1.5rem;
     }
 
-    h2 { margin: 0 0 0.2rem 0; color: #38bdf8; letter-spacing: 2px; }
-    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
-
-    .keypad-container {
-      background: #151d2d;
-      border: 4px solid #1e293b;
-      border-radius: 18px;
-      padding: 1.2rem;
-      width: 100%;
-      max-width: 340px;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.7), 0 10px 25px rgba(0,0,0,0.5);
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
 
-    .grid {
+    h2 { margin: 0 0 0.2rem 0; color: #38bdf8; letter-spacing: 2px; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Pantalla de los botones */
+    .keypad-container {
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 20px;
+      padding: 1.2rem;
+      width: 100%;
+      max-width: 350px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .display-screen {
+      background: #030712;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-size: 1.1rem;
+      font-weight: 900;
+    }
+
+    .grid-numbers {
       display: grid;
       grid-template-columns: repeat(5, 1fr);
-      gap: 10px;
+      gap: 8px;
     }
 
     .num-btn {
       aspect-ratio: 1;
-      background: #1e293b;
-      border: 2px solid #334155;
-      border-radius: 8px;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #38bdf8;
+      border-radius: 10px;
       color: #38bdf8;
-      font-size: 1.3rem;
+      font-size: 1.35rem;
       font-weight: 900;
+      font-family: monospace;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 3px 0 #0f172a;
-      transition: all 0.05s;
+      box-shadow: 0 4px 0 #075985;
+      transition: all 0.05s ease;
     }
     .num-btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #0f172a;
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #075985;
+      background: #0284c7;
+      color: #fff;
     }
     .num-btn.pressed {
-      background: #052e16;
+      background: #047857;
       border-color: #22c55e;
-      color: #4ade80;
+      color: #fff;
       box-shadow: none;
-      transform: translateY(2px);
+      transform: translateY(3px);
       cursor: default;
+      opacity: 0.6;
     }
 
     #status {
-      margin-top: 1rem;
+      margin-top: 0.8rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       color: #22c55e;
       min-height: 1.5rem;
     }
 
-    /* Overlay inicio/bloqueo sesión */
     #overlay {
-      position: fixed; inset: 0; background: #0b0f19; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -161,12 +194,12 @@
 </head>
 <body>
 
-  <!-- Sabotaje: Banner Fuga de Gas -->
+  <!-- Alerta Fuga de Gas -->
   <div id="gasAlertBanner">
     ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
   </div>
 
-  <!-- Sabotaje: Pantalla Derrota por Gas a 0s -->
+  <!-- Pantalla Derrota (Gas 0s) -->
   <div id="defeatOverlay">
     <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
@@ -175,7 +208,7 @@
     </p>
   </div>
 
-  <!-- Sabotaje: Luces Apagadas -->
+  <!-- Apagón de Luces -->
   <div id="lightsBlackout">
     <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
@@ -184,7 +217,17 @@
     </p>
   </div>
 
-  <!-- Overlay de Identificación y Bloqueo -->
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Tarea bloqueada. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #38bdf8;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -200,11 +243,16 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>REACTORES: SECUENCIA</h2>
-  <p>Pulsa los números en orden ascendente (1 al 10)</p>
+  <h2>ORDEN NUMÉRICO</h2>
+  <p>Pulsa los números en orden ascendente (1 ➔ 10)</p>
 
   <div class="keypad-container">
-    <div class="grid" id="numberGrid"></div>
+    <div class="display-screen">
+      <span style="color: #94a3b8; font-size: 0.85rem;">SIGUIENTE:</span>
+      <span id="nextTargetDisplay" style="color: #38bdf8; font-size: 1.4rem;">1</span>
+    </div>
+
+    <div class="grid-numbers" id="numbersGrid"></div>
   </div>
 
   <div id="status"></div>
@@ -215,10 +263,10 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
-    let currentTarget = 1;
-    let isFinished = false;
+    let expectedNumber = 1;
+    let isTaskDone = false;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 440, type = 'sine', duration = 0.08) {
@@ -233,6 +281,11 @@
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    // Si ya tiene el nombre en localStorage, pre-rellenar el input
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -255,7 +308,9 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
 
+      // Comprobar si ya la completó
       const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
@@ -272,6 +327,7 @@
         return;
       }
 
+      // Comprobar concurrencia (1 tripulante a la vez)
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -304,7 +360,7 @@
       checkSabotages();
       setInterval(checkSabotages, 1500);
 
-      initGrid();
+      initNumbersGame();
     }
 
     async function takeSession() {
@@ -326,6 +382,17 @@
     window.addEventListener('pagehide', releaseSession);
 
     async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        meetEl.style.display = 'none';
+      }
+
       const { data: sabs } = await client.from('sabotages').select('*');
       if (!sabs) return;
 
@@ -334,14 +401,9 @@
       const sabControles = sabs.find(s => s.id === 'controles');
 
       // 1. Luces
-      const blackoutEl = document.getElementById('lightsBlackout');
-      if (sabLuces && sabLuces.active) {
-        blackoutEl.style.display = 'flex';
-      } else {
-        blackoutEl.style.display = 'none';
-      }
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
-      // 2. Fuga de gas y derrota si llega a 0
+      // 2. Fuga de gas
       const gasBanner = document.getElementById('gasAlertBanner');
       const gasTimerSpan = document.getElementById('gasTimerSpan');
       const defeatEl = document.getElementById('defeatOverlay');
@@ -351,18 +413,13 @@
         const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
         gasTimerSpan.innerText = `${remaining}s`;
-
-        if (remaining === 0) {
-          defeatEl.style.display = 'flex';
-        } else {
-          defeatEl.style.display = 'none';
-        }
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
       } else {
         gasBanner.style.display = 'none';
         defeatEl.style.display = 'none';
       }
 
-      // 3. Controles Invertidos
+      // 3. Controles
       if (sabControles && sabControles.active) {
         document.body.classList.add('inverted-controls');
       } else {
@@ -370,49 +427,60 @@
       }
     }
 
-    function initGrid() {
-      const grid = document.getElementById('numberGrid');
-      grid.innerHTML = '';
-      currentTarget = 1;
-      isFinished = false;
+    function initNumbersGame() {
+      expectedNumber = 1;
+      isTaskDone = false;
+      document.getElementById('nextTargetDisplay').innerText = expectedNumber;
+      document.getElementById('status').innerText = '';
 
-      // Generar números del 1 al 10 en orden aleatorio
+      // Crear array del 1 al 10 y barajarlo
       const numbers = Array.from({ length: 10 }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+
+      const grid = document.getElementById('numbersGrid');
+      grid.innerHTML = '';
 
       numbers.forEach(num => {
         const btn = document.createElement('button');
         btn.className = 'num-btn';
-        btn.innerText = num;
         btn.id = `btn-num-${num}`;
+        btn.innerText = num;
         btn.onclick = () => handleNumberClick(num, btn);
         grid.appendChild(btn);
       });
     }
 
     async function handleNumberClick(num, btn) {
-      if (isFinished || btn.classList.contains('pressed')) return;
+      if (isTaskDone || btn.classList.contains('pressed')) return;
 
-      if (num === currentTarget) {
+      if (num === expectedNumber) {
         btn.classList.add('pressed');
-        playBeep(350 + (num * 40), 'sine', 0.08);
-        currentTarget++;
+        playBeep(400 + num * 45, 'sine', 0.08);
 
-        if (currentTarget > 10) {
-          isFinished = true;
-          document.getElementById('status').innerText = '¡SECUENCIA CORRECTA!';
+        if (expectedNumber === 10) {
+          isTaskDone = true;
+          document.getElementById('nextTargetDisplay').innerText = 'OK';
+          document.getElementById('status').innerText = '¡ORDEN COMPLETADO!';
           playBeep(880, 'sine', 0.4);
           if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
+          // Guardar en la base de datos para que se actualice la tablet del tripulante y el admin
           await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
           await releaseSession();
+        } else {
+          expectedNumber++;
+          document.getElementById('nextTargetDisplay').innerText = expectedNumber;
         }
       } else {
         // Fallo: error sonoro y reinicio
-        playBeep(180, 'sawtooth', 0.25);
-        if (navigator.vibrate) navigator.vibrate(200);
+        playBeep(140, 'sawtooth', 0.3);
+        if (navigator.vibrate) navigator.vibrate(250);
+        document.getElementById('status').innerText = '¡ERROR! Secuencia reiniciada';
+        document.getElementById('status').style.color = '#ef4444';
 
-        document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('pressed'));
-        currentTarget = 1;
+        setTimeout(() => {
+          document.getElementById('status').style.color = '#22c55e';
+          initNumbersGame();
+        }, 600);
       }
     }
   </script>
