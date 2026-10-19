@@ -18,7 +18,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0.8rem;
+      padding: 0.6rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -27,9 +27,9 @@
       overflow: hidden;
     }
     h2 { margin: 0 0 0.2rem 0; color: #d97706; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+    p { margin: 0 0 0.7rem 0; color: #94a3b8; font-size: 0.85rem; }
 
-    /* Estructura de la pantalla */
+    /* Mueble principal */
     .kitchen-frame {
       position: relative;
       background: #1c130b;
@@ -37,7 +37,7 @@
       border-radius: 18px;
       width: 100%;
       max-width: 360px;
-      height: 480px;
+      height: 490px;
       box-shadow: inset 0 0 25px rgba(0,0,0,0.85), 0 12px 30px rgba(0,0,0,0.7);
       display: flex;
       flex-direction: column;
@@ -48,11 +48,11 @@
     .kitchen-header {
       background: #2a180b;
       border-bottom: 2px solid #451a03;
-      padding: 0.6rem 1rem;
+      padding: 0.5rem 0.9rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      z-index: 10;
+      z-index: 20;
     }
     .header-label {
       font-size: 0.8rem;
@@ -72,48 +72,135 @@
       letter-spacing: 2px;
     }
 
-    /* Suelo de baldosas de cocina */
+    /* Suelo de baldosas/ladrillos blancos */
     .kitchen-floor {
       position: relative;
       flex: 1;
       overflow: hidden;
-      background-color: #271a10;
-      background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.45) 2px, transparent 2px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.45) 2px, transparent 2px);
-      background-size: 40px 40px;
-      box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+      background-color: #e5e7eb;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.45) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.45) 2px, transparent 2px);
+      background-size: 42px 42px;
       cursor: crosshair;
     }
 
-    /* Cucaracha viva */
-    .cockroach {
+    /* Decoraciones de la cocina */
+    .kitchen-prop {
       position: absolute;
-      width: 44px;
-      height: 44px;
-      font-size: 2rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transform: translate(-50%, -50%);
-      cursor: pointer;
-      z-index: 5;
-      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.8));
-      transition: opacity 0.2s ease-out;
+      pointer-events: none;
+      z-index: 10;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
     }
 
-    /* Mancha / aplastamiento */
+    /* Nevera arriba-izquierda */
+    .fridge {
+      top: 0;
+      left: 0;
+      width: 86px;
+      height: 94px;
+      background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
+      border-right: 3px solid #475569;
+      border-bottom: 3px solid #475569;
+      border-radius: 0 0 10px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      padding: 6px;
+    }
+    .fridge-door-line {
+      width: 100%;
+      height: 2px;
+      background: #475569;
+    }
+    .fridge-handle {
+      width: 6px;
+      height: 22px;
+      background: #334155;
+      border-radius: 3px;
+      align-self: flex-end;
+      margin-right: 4px;
+    }
+
+    /* Encimera arriba-derecha */
+    .countertop {
+      top: 0;
+      right: 0;
+      width: 110px;
+      height: 82px;
+      background: #334155;
+      border-left: 3px solid #1e293b;
+      border-bottom: 3px solid #1e293b;
+      border-radius: 0 0 0 10px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+    }
+    .stove-burner {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 3px solid #0f172a;
+      background: radial-gradient(circle, #475569 40%, #1e293b 80%);
+    }
+
+    /* Cubo de basura abajo-izquierda */
+    .trashcan {
+      bottom: 8px;
+      left: 8px;
+      width: 44px;
+      height: 52px;
+      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+      border: 2px solid #334155;
+      border-radius: 8px 8px 12px 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .trash-lid {
+      width: 50px;
+      height: 8px;
+      background: #475569;
+      border-radius: 4px;
+      margin-top: -4px;
+    }
+    .trash-pedal {
+      width: 14px;
+      height: 4px;
+      background: #1e293b;
+      margin-top: auto;
+      margin-bottom: 2px;
+    }
+
+    /* Cucaracha dibujada en SVG */
+    .cockroach {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 6;
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5));
+    }
+    .cockroach svg {
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    /* Mancha de aplastamiento */
     .splat {
       position: absolute;
       width: 32px;
       height: 32px;
       border-radius: 50%;
       background: radial-gradient(circle, #78350f 40%, rgba(69, 26, 3, 0.6) 80%, transparent 100%);
-      transform: translate(-50%, -50%) scale(1.2);
+      transform: translate(-50%, -50%) scale(1.1);
       pointer-events: none;
-      z-index: 3;
-      opacity: 0.8;
-      transition: opacity 1.5s ease-out;
+      z-index: 4;
+      opacity: 0.85;
+      transition: opacity 2s ease-out;
     }
 
     #status {
@@ -176,7 +263,26 @@
     </div>
 
     <!-- Suelo interactivo -->
-    <div class="kitchen-floor" id="floorArea"></div>
+    <div class="kitchen-floor" id="floorArea">
+      <!-- Nevera -->
+      <div class="kitchen-prop fridge">
+        <div class="fridge-handle"></div>
+        <div class="fridge-door-line"></div>
+        <div class="fridge-handle"></div>
+      </div>
+
+      <!-- Encimera -->
+      <div class="kitchen-prop countertop">
+        <div class="stove-burner"></div>
+        <div class="stove-burner"></div>
+      </div>
+
+      <!-- Cubo de basura -->
+      <div class="kitchen-prop trashcan">
+        <div class="trash-lid"></div>
+        <div class="trash-pedal"></div>
+      </div>
+    </div>
   </div>
 
   <div id="status"></div>
@@ -196,6 +302,38 @@
     let bugs = [];
     let spawnTimer = null;
     let animFrame = null;
+
+    // SVG vectorial de una cucaracha real
+    const COCKROACH_SVG = `
+      <svg viewBox="0 0 100 100">
+        <!-- Antenas -->
+        <path d="M 45 30 Q 30 10 20 6" stroke="#451a03" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M 55 30 Q 70 10 80 6" stroke="#451a03" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+
+        <!-- Patas traseras -->
+        <path d="M 38 65 L 15 82 L 10 94" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 62 65 L 85 82 L 90 94" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+        <!-- Patas medias -->
+        <path d="M 36 50 L 12 52 L 8 62" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 64 50 L 88 52 L 92 62" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+        <!-- Patas delanteras -->
+        <path d="M 40 38 L 18 28 L 14 18" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M 60 38 L 82 28 L 86 18" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+        <!-- Cuerpo / Abdomen -->
+        <ellipse cx="50" cy="56" rx="14" ry="22" fill="#78350f" stroke="#451a03" stroke-width="2.5"/>
+        <!-- Rayas de segmentos del abdomen -->
+        <path d="M 39 48 Q 50 52 61 48" stroke="#451a03" stroke-width="2" fill="none"/>
+        <path d="M 38 56 Q 50 60 62 56" stroke="#451a03" stroke-width="2" fill="none"/>
+        <path d="M 40 64 Q 50 68 60 64" stroke="#451a03" stroke-width="2" fill="none"/>
+
+        <!-- Tórax y Cabeza -->
+        <ellipse cx="50" cy="38" rx="11" ry="8" fill="#92400e" stroke="#451a03" stroke-width="2"/>
+        <ellipse cx="50" cy="31" rx="7" ry="5" fill="#451a03"/>
+      </svg>
+    `;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 440, type = 'sine', duration = 0.1) {
@@ -298,7 +436,7 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Motor de Cucarachas
+    // Motor de cucarachas
     const floorArea = document.getElementById('floorArea');
     const killCounter = document.getElementById('killCounter');
 
@@ -310,57 +448,55 @@
 
       document.querySelectorAll('.cockroach, .splat').forEach(e => e.remove());
 
-      // Aparecen cucarachas periódicamente
-      spawnTimer = setInterval(spawnBug, 500);
+      // Aparecen cada 650ms
+      spawnTimer = setInterval(spawnBug, 650);
       animFrame = requestAnimationFrame(gameLoop);
     }
 
     function spawnBug() {
       if (isGameOver) return;
-      if (bugs.length >= 6) return; // Máximo 6 activas en pantalla
+      if (bugs.length >= 5) return;
 
       const rect = floorArea.getBoundingClientRect();
-
-      // Elegir un borde aleatorio para nacer (0=Arriba, 1=Abajo, 2=Izquierda, 3=Derecha)
       const side = Math.floor(Math.random() * 4);
       let startX = 0, startY = 0;
       let targetX = 0, targetY = 0;
 
-      if (side === 0) { // Arriba
+      if (side === 0) { // Nace arriba
         startX = Math.random() * rect.width;
         startY = -25;
         targetX = Math.random() * rect.width;
         targetY = rect.height + 25;
-      } else if (side === 1) { // Abajo
+      } else if (side === 1) { // Nace abajo
         startX = Math.random() * rect.width;
         startY = rect.height + 25;
         targetX = Math.random() * rect.width;
         targetY = -25;
-      } else if (side === 2) { // Izquierda
+      } else if (side === 2) { // Nace izquierda
         startX = -25;
         startY = Math.random() * rect.height;
         targetX = rect.width + 25;
         targetY = Math.random() * rect.height;
-      } else { // Derecha
+      } else { // Nace derecha
         startX = rect.width + 25;
         startY = Math.random() * rect.height;
         targetX = -25;
         targetY = Math.random() * rect.height;
       }
 
-      // Calcular vector de movimiento
       const dx = targetX - startX;
       const dy = targetY - startY;
       const dist = Math.hypot(dx, dy);
-      const speed = Math.random() * 1.5 + 2.2;
 
-      // Ángulo de rotación de la cucaracha hacia donde camina
+      // Velocidad más lenta y manejable
+      const speed = Math.random() * 0.8 + 1.4;
+
       const angleRad = Math.atan2(dy, dx);
-      const angleDeg = (angleRad * 180 / Math.PI) + 90; // +90 para alinear cabeza
+      const angleDeg = (angleRad * 180 / Math.PI) + 90;
 
       const el = document.createElement('div');
       el.className = 'cockroach';
-      el.innerText = '🪳';
+      el.innerHTML = COCKROACH_SVG;
       el.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
       floorArea.appendChild(el);
 
@@ -374,7 +510,6 @@
         alive: true
       };
 
-      // Al pulsar sobre ella: aplastar
       el.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
         squashBug(bug);
@@ -387,19 +522,16 @@
       if (!bug.alive || isGameOver) return;
       bug.alive = false;
 
-      // Sonido de aplastamiento
-      playBeep(220, 'triangle', 0.15);
+      playBeep(210, 'triangle', 0.15);
       if (navigator.vibrate) navigator.vibrate(50);
 
-      // Crear mancha en el suelo
       const splat = document.createElement('div');
       splat.className = 'splat';
       splat.style.left = `${bug.x}px`;
       splat.style.top = `${bug.y}px`;
       floorArea.appendChild(splat);
-      setTimeout(() => splat.style.opacity = '0.2', 600);
+      setTimeout(() => splat.style.opacity = '0.2', 700);
 
-      // Eliminar elemento de la cucaracha
       bug.el.remove();
       bugs = bugs.filter(b => b !== bug);
 
@@ -425,7 +557,6 @@
         bug.el.style.left = `${bug.x}px`;
         bug.el.style.top = `${bug.y}px`;
 
-        // Si sale de los márgenes por completo, se retira
         if (bug.x < -40 || bug.x > rect.width + 40 || bug.y < -40 || bug.y > rect.height + 40) {
           bug.el.remove();
           bugs.splice(i, 1);
