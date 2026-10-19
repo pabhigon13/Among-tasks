@@ -92,19 +92,6 @@
       display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .btn-report:active { transform: translateY(4px); box-shadow: 0 2px 0 #450a0a; }
-
-    #overlayName {
-      position: fixed; inset: 0; background: #090e17; z-index: 120;
-      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
-    }
-    .input-name {
-      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
-      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
-    }
-    .btn-start {
-      margin-top: 1rem; padding: 0.8rem 1.6rem; background: #38bdf8; color: #000;
-      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
-    }
   </style>
 </head>
 <body>
@@ -138,20 +125,13 @@
     </p>
   </div>
 
-  <div id="overlayName">
-    <h2 style="color: #38bdf8; margin-bottom: 0.4rem;">IDENTIFÍCATE</h2>
-    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.2rem;">Introduce tu nombre de tripulante</p>
-    <input id="inputName" class="input-name" placeholder="Tu nombre..." autocomplete="off" />
-    <button class="btn-start" onclick="saveName()">Entrar</button>
-  </div>
-
   <div class="container">
     <div>
       <h1 style="margin: 0; color: #38bdf8; font-size: 1.4rem; letter-spacing: 1px;">TABLET DE TRIPULANTE</h1>
-      <p id="playerGreeting" style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">Cargando identidad...</p>
+      <p id="playerGreeting" style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">Validando credenciales...</p>
     </div>
 
-    <!-- Progreso Global de toda la tripulación -->
+    <!-- Progreso Global -->
     <div class="card" style="border-color: #065f46;">
       <div class="card-title">
         <span style="color: #34d399;">PROGRESO TOTAL DE TRIPULACIÓN</span>
@@ -163,7 +143,7 @@
       <div id="globalCountLabel" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.35rem;">Cargando...</div>
     </div>
 
-    <!-- Progreso Personal -->
+    <!-- Progreso Individual -->
     <div class="card">
       <div class="card-title">
         <span>MIS TAREAS INDIVIDUALES</span>
@@ -214,34 +194,56 @@
       { id: 'cucarachas', name: '🪳 Aplastar Cucarachas' }
     ];
 
-    if (currentPlayer) {
-      document.getElementById('overlayName').style.display = 'none';
-      initTerminal();
+    function redirectToHome() {
+      localStorage.removeItem('among_player_name');
+      const origin = window.location.origin;
+      const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
+      window.location.replace(`${origin}${path}/Home.html`);
     }
 
-    function saveName() {
-      const val = document.getElementById('inputName').value.trim().toUpperCase();
-      if (!val) return alert('Escribe tu nombre');
-      currentPlayer = val;
-      localStorage.setItem('among_player_name', currentPlayer);
-      document.getElementById('overlayName').style.display = 'none';
-      initTerminal();
-    }
+    // Comprobación de seguridad inicial
+    async function verifyPlayerAccess() {
+      if (!currentPlayer) {
+        redirectToHome();
+        return;
+      }
 
-    function initTerminal() {
+      const { data: player } = await client
+        .from('game_players')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .maybeSingle();
+
+      // Si no existe en la partida o su rol no es tripulante, fuera
+      if (!player || player.role !== 'tripulante') {
+        redirectToHome();
+        return;
+      }
+
       document.getElementById('playerGreeting').innerText = `Tripulante: ${currentPlayer}`;
       pollData();
       setInterval(pollData, 1500);
     }
 
     async function pollData() {
+      // Vigilante continuo: comprobar si la partida sigue existiendo para este jugador
+      const { data: player } = await client
+        .from('game_players')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .maybeSingle();
+
+      if (!player || player.role !== 'tripulante') {
+        redirectToHome();
+        return;
+      }
+
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
       if (settings && settings.crew_count) totalCrewCount = settings.crew_count;
 
-      // 1. Tareas completadas totales y personales
+      // 1. Tareas completadas
       const { data: allDone } = await client.from('completed_tasks').select('*');
       if (allDone) {
-        // Global
         const maxTasks = totalCrewCount * ALL_TASKS.length;
         const totalCompleted = allDone.length;
         const globalPct = Math.min(100, Math.round((totalCompleted / maxTasks) * 100));
@@ -249,7 +251,6 @@
         document.getElementById('globalProgressText').innerText = `${globalPct}%`;
         document.getElementById('globalCountLabel').innerText = `${totalCompleted}/${maxTasks} tareas completadas en total`;
 
-        // Personal
         const myDone = allDone.filter(t => t.player_name === currentPlayer);
         const mySet = new Set(myDone.map(t => t.task_name));
         renderTasks(mySet);
@@ -336,6 +337,8 @@
       });
       pollData();
     }
+
+    verifyPlayerAccess();
   </script>
 </body>
 </html>
