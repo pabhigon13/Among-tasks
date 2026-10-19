@@ -6,12 +6,7 @@
   <title>Electricidad: Cables</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      touch-action: manipulation;
-      -webkit-user-select: none;
-      user-select: none;
-    }
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
     body {
       background: #0f1117;
       color: #fff;
@@ -33,7 +28,6 @@
       filter: hue-rotate(90deg);
     }
 
-    /* Alerta superior de Fuga */
     #gasAlertBanner {
       display: none;
       position: fixed;
@@ -52,7 +46,6 @@
       to { background: #b91c1c; }
     }
 
-    /* Pantalla completa de Derrota por Gas a 0s */
     #defeatOverlay {
       display: none;
       position: fixed;
@@ -66,7 +59,6 @@
       padding: 1.5rem;
     }
 
-    /* Pantalla de Luces Apagadas */
     #lightsBlackout {
       display: none;
       position: fixed;
@@ -74,6 +66,19 @@
       background: #000;
       z-index: 90;
       color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -163,12 +168,10 @@
 </head>
 <body>
 
-  <!-- Alerta Fuga -->
   <div id="gasAlertBanner">
     ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
   </div>
 
-  <!-- Pantalla de Derrota (Gas a 0s) -->
   <div id="defeatOverlay">
     <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
@@ -177,12 +180,20 @@
     </p>
   </div>
 
-  <!-- Pantalla Luces Apagadas -->
   <div id="lightsBlackout">
     <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
     <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
       Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Tarea bloqueada. Acude a la mesa central de inmediato.
     </p>
   </div>
 
@@ -279,7 +290,7 @@
       if (doneData && doneData.length > 0) {
         document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
         document.getElementById('ovTitle').style.color = '#ef4444';
-        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea.`;
         input.style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnRetry').style.display = 'block';
@@ -340,6 +351,17 @@
     window.addEventListener('pagehide', releaseSession);
 
     async function checkSabotages() {
+      // 0. Comprobar si hay reunión activa y bloquear la tarea
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        meetEl.style.display = 'none';
+      }
+
       const { data: sabs } = await client.from('sabotages').select('*');
       if (!sabs) return;
 
@@ -355,7 +377,7 @@
         blackoutEl.style.display = 'none';
       }
 
-      // 2. Fuga de Gas (con Alerta y Derrota si llega a 0)
+      // 2. Fuga de gas
       const gasBanner = document.getElementById('gasAlertBanner');
       const gasTimerSpan = document.getElementById('gasTimerSpan');
       const defeatEl = document.getElementById('defeatOverlay');
@@ -365,12 +387,7 @@
         const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
         gasTimerSpan.innerText = `${remaining}s`;
-
-        if (remaining === 0) {
-          defeatEl.style.display = 'flex';
-        } else {
-          defeatEl.style.display = 'none';
-        }
+        defeatEl.style.display = remaining === 0 ? 'flex' : 'none';
       } else {
         gasBanner.style.display = 'none';
         defeatEl.style.display = 'none';
@@ -458,7 +475,6 @@
           tempLine.setAttribute('y2', tRect.top + tRect.height / 2 - pRect.top);
           completed[selectedNode.dataset.color] = true;
           playBeep(520, 'sine', 0.1);
-
           checkWin();
         } else {
           tempLine.remove();
