@@ -41,6 +41,20 @@
       flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
 
+    /* Pantalla de Derrota del Impostor si completan todas las tareas */
+    #impostorTaskDefeatOverlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: radial-gradient(circle, #450a0a 0%, #1a0305 85%);
+      z-index: 160; color: #fff;
+      flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+      animation: zoomIn 0.5s ease-out;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.6); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
     #meetingOverlay {
       display: none;
       position: fixed; inset: 0;
@@ -114,6 +128,15 @@
   </style>
 </head>
 <body>
+
+  <!-- Derrota por Tareas Completadas -->
+  <div id="impostorTaskDefeatOverlay">
+    <div style="font-size: 4.5rem; margin-bottom: 0.5rem;">💀🛸</div>
+    <h1 style="color: #ef4444; font-size: 2.2rem; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #fecaca; font-size: 1.05rem; max-width: 300px; margin: 0; line-height: 1.4;">
+      La tripulación completó todas las tareas a tiempo. La nave ha escapado.
+    </p>
+  </div>
 
   <div id="meetingOverlay">
     <div style="font-size: 4rem; margin-bottom: 0.5rem;">📢🚨</div>
@@ -240,7 +263,6 @@
         return;
       }
 
-      // Comprobación de existencia en la base de datos
       const { data: player, error } = await client
         .from('game_players')
         .select('*')
@@ -287,6 +309,14 @@
         document.getElementById('progressText').innerText = `${globalPercent}%`;
         document.getElementById('tasksCount').innerText = `${totalCompleted}/${totalMaxTasks} tareas completadas (${totalCrewCount} tripulantes)`;
         renderTaskBreakdown(doneTasks);
+
+        // Si la tripulación completa todas las tareas: Derrota del Impostor
+        const defeatByTaskEl = document.getElementById('impostorTaskDefeatOverlay');
+        if (totalCompleted >= totalMaxTasks && totalMaxTasks > 0) {
+          defeatByTaskEl.style.display = 'flex';
+        } else {
+          defeatByTaskEl.style.display = 'none';
+        }
       }
 
       const { data: sessions } = await client.from('active_sessions').select('*');
@@ -445,7 +475,6 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Arranque
     verifyAndPoll();
     setInterval(verifyAndPoll, 1000);
     setInterval(updateCooldownUI, 500);
