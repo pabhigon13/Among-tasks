@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Terminal de Tripulante</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    body {
+      background: #090e17;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.3s ease;
+    }
+
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    /* Banners y overlays de alertas */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 900;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #meetingOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 110;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* Tarjetas de interfaz */
+    .card {
+      background: #111827;
+      border: 2px solid #1f2937;
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      text-align: left;
+    }
+    .card-title {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #38bdf8;
+      letter-spacing: 1px;
+      margin-bottom: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Lista de tareas */
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .task-item {
+      background: #0b1120;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+    }
+    .task-item.done {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    .task-badge {
+      font-weight: bold;
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .badge-pending { color: #fbbf24; background: #451a03; }
+    .badge-done { color: #86efac; background: #14532d; }
+
+    /* Barra de progreso */
+    .progress-track {
+      width: 100%;
+      height: 12px;
+      background: #000;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 0.4rem;
+      border: 1px solid #1e293b;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #22c55e);
+      transition: width 0.3s ease;
+    }
+
+    /* Botón de reporte */
+    .btn-report {
+      width: 100%;
+      padding: 1.1rem;
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      color: #fff;
+      font-size: 1.2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      border: 3px solid #f87171;
+      border-radius: 14px;
+      cursor: pointer;
+      box-shadow: 0 6px 0 #450a0a, 0 10px 20px rgba(220, 38, 38, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .btn-report:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #450a0a;
+    }
+
+    #overlayName {
+      position: fixed; inset: 0; background: #090e17; z-index: 120;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .input-name {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .btn-start {
+      margin-top: 1rem; padding: 0.8rem 1.6rem; background: #38bdf8; color: #000;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Alerta de Reunión en curso -->
+  <div id="meetingOverlay">
+    <div style="font-size: 4rem; margin-bottom: 0.5rem;">📢🚨</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡CADÁVER REPORTADO!</h1>
+    <p id="meetingReporter" style="color: #93c5fd; font-size: 1.1rem; margin: 0 0 1rem 0; font-weight: bold;"></p>
+    <p style="color: #e2e8f0; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Todos los jugadores deben reunirse de inmediato en la mesa central para debatir y votar.
+    </p>
+  </div>
+
+  <!-- Overlay por si entra directo sin pasar por el lobby -->
+  <div id="overlayName">
+    <h2 style="color: #38bdf8; margin-bottom: 0.4rem;">IDENTIFÍCATE</h2>
+    <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.2rem;">Introduce tu nombre de tripulante</p>
+    <input id="inputName" class="input-name" placeholder="Tu nombre..." autocomplete="off" />
+    <button class="btn-start" onclick="saveName()">Entrar</button>
+  </div>
+
+  <div class="container">
+    <div>
+      <h1 style="margin: 0; color: #38bdf8; font-size: 1.4rem; letter-spacing: 1px;">TABLET DE TRIPULANTE</h1>
+      <p id="playerGreeting" style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">Cargando identidad...</p>
+    </div>
+
+    <!-- Progreso individual de este tripulante -->
+    <div class="card">
+      <div class="card-title">
+        <span>MIS TAREAS ASIGNADAS</span>
+        <span id="personalProgressText" style="color: #22c55e;">0 / 8</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="personalProgressBar"></div>
+      </div>
+    </div>
+
+    <!-- Lista de tareas -->
+    <div class="card">
+      <div class="card-title">
+        <span>ESTADO DE TAREAS</span>
+        <span style="font-size: 0.7rem; color: #94a3b8;">SE ACTUALIZA SOLO</span>
+      </div>
+      <div class="task-list" id="myTasksList"></div>
+    </div>
+
+    <!-- Botón de Reporte -->
+    <div>
+      <button class="btn-report" onclick="reportBody()">
+        <span>📢</span>
+        <span>REPORTAR CADÁVER</span>
+      </button>
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">
+        Púlsalo únicamente si encuentras a un compañero eliminado
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
+
+    const ALL_TASKS = [
+      { id: 'cables', name: '⚡ Conectar Cables' },
+      { id: 'numeros', name: '🔢 Orden Numérico' },
+      { id: 'simon', name: '🧠 Simon Dice' },
+      { id: 'conduccion', name: '🚗 Ruta A-3' },
+      { id: 'dni', name: '🪪 Pasar DNI' },
+      { id: 'operacion', name: '🧮 Operación Matemática' },
+      { id: 'cascada', name: '🍻 Cascada' },
+      { id: 'cucarachas', name: '🪳 Aplastar Cucarachas' }
+    ];
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('overlayName').style.display = 'none';
+      initTerminal();
+    }
+
+    function saveName() {
+      const val = document.getElementById('inputName').value.trim().toUpperCase();
+      if (!val) return alert('Escribe tu nombre');
+      currentPlayer = val;
+      localStorage.setItem('among_player_name', currentPlayer);
+      document.getElementById('overlayName').style.display = 'none';
+      initTerminal();
+    }
+
+    function initTerminal() {
+      document.getElementById('playerGreeting').innerText = `Tripulante: ${currentPlayer}`;
+      pollData();
+      setInterval(pollData, 1500);
+    }
+
+    async function pollData() {
+      // 1. Tareas completadas por este jugador
+      const { data: doneTasks } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer);
+
+      const doneSet = new Set((doneTasks || []).map(t => t.task_name));
+      renderTasks(doneSet);
+
+      // 2. Comprobar sabotajes
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (sabs) {
+        checkSabotages(sabs);
+      }
+
+      // 3. Comprobar reunión de emergencia / cadáver reportado
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetingOverlay = document.getElementById('meetingOverlay');
+
+      if (meeting && meeting.active) {
+        meetingOverlay.style.display = 'flex';
+        document.getElementById('meetingReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+      } else {
+        meetingOverlay.style.display = 'none';
+      }
+    }
+
+    function renderTasks(doneSet) {
+      const list = document.getElementById('myTasksList');
+      list.innerHTML = '';
+
+      let completedCount = 0;
+
+      ALL_TASKS.forEach(t => {
+        const isDone = doneSet.has(t.id);
+        if (isDone) completedCount++;
+
+        const item = document.createElement('div');
+        item.className = `task-item ${isDone ? 'done' : ''}`;
+        item.innerHTML = `
+          <span>${t.name}</span>
+          <span class="task-badge ${isDone ? 'badge-done' : 'badge-pending'}">
+            ${isDone ? 'COMPLETADA' : 'PENDIENTE'}
+          </span>
+        `;
+        list.appendChild(item);
+      });
+
+      document.getElementById('personalProgressText').innerText = `${completedCount} / ${ALL_TASKS.length}`;
+      const pct = (completedCount / ALL_TASKS.length) * 100;
+      document.getElementById('personalProgressBar').style.width = `${pct}%`;
+    }
+
+    function checkSabotages(sabs) {
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
+
+      // Luces
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
+
+      // Fuga de gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
+
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
+      }
+
+      // Controles
+      if (sabControles && sabControles.active) {
+        document.body.classList.add('inverted-controls');
+      } else {
+        document.body.classList.remove('inverted-controls');
+      }
+    }
+
+    async function reportBody() {
+      const ok = confirm('¿Confirmas que has encontrado un cadáver y quieres convocar una reunión de emergencia?');
+      if (!ok) return;
+
+      playBeep(880, 'sawtooth', 0.5);
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
+
+      await client.from('game_meetings').upsert({
+        id: 'current',
+        active: true,
+        reported_by: currentPlayer,
+        started_at: new Date().toISOString()
+      });
+
+      pollData();
+    }
+  </script>
+</body>
+</html>
