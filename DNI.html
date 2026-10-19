@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Administración: Pasar DNI</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #090e13;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #06b6d4; letter-spacing: 2px; font-size: 1.3rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Mueble / Marco general */
+    .terminal-case {
+      background: #1e2430;
+      border: 4px solid #334155;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 360px;
+      padding: 1.2rem 1rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    /* Pantalla y Lector de banda */
+    .scanner-box {
+      background: #0f172a;
+      border: 3px solid #1e293b;
+      border-radius: 12px;
+      padding: 0.8rem;
+    }
+    .scanner-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      padding: 0 0.4rem;
+    }
+    .screen-readout {
+      font-family: "Courier New", monospace;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #38bdf8;
+      letter-spacing: 1px;
+    }
+    .led-indicator {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #475569;
+      border: 2px solid #000;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .led-indicator.success { background: #22c55e; box-shadow: 0 0 12px #22c55e; }
+    .led-indicator.error { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+
+    /* Ranura de paso */
+    .swipe-slot {
+      position: relative;
+      background: #020617;
+      border: 2px solid #334155;
+      border-radius: 8px;
+      height: 64px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    }
+    .slot-arrow {
+      position: absolute;
+      right: 12px;
+      color: rgba(255,255,255,0.25);
+      font-size: 1.2rem;
+      font-weight: bold;
+      pointer-events: none;
+    }
+
+    /* Zona inferior: Cartera */
+    .wallet-compartment {
+      position: relative;
+      background: linear-gradient(180deg, #451a03 0%, #290e02 100%);
+      border: 3px solid #78350f;
+      border-radius: 12px;
+      height: 140px;
+      overflow: hidden;
+      box-shadow: inset 0 6px 15px rgba(0,0,0,0.7);
+      display: flex;
+      align-items: flex-end;
+      padding: 0.8rem;
+    }
+    .wallet-stitching {
+      position: absolute;
+      inset: 4px;
+      border: 1px dashed rgba(251, 191, 36, 0.4);
+      border-radius: 8px;
+      pointer-events: none;
+    }
+
+    /* El DNI deslizable */
+    #dniCard {
+      position: absolute;
+      width: 150px;
+      height: 94px;
+      background: linear-gradient(135deg, #fef08a 0%, #bae6fd 60%, #e0f2fe 100%);
+      border: 2px solid #0284c7;
+      border-radius: 8px;
+      left: 15px;
+      top: 15px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.6);
+      cursor: grab;
+      z-index: 10;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #0f172a;
+    }
+    #dniCard:active {
+      cursor: grabbing;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.8);
+    }
+
+    /* Elementos del DNI */
+    .dni-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.45rem;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      color: #0369a1;
+    }
+    .dni-body {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+    .dni-photo {
+      width: 30px;
+      height: 38px;
+      background: #0284c7;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid #0369a1;
+    }
+    .dni-chip {
+      width: 14px;
+      height: 11px;
+      background: #f59e0b;
+      border: 1px solid #b45309;
+      border-radius: 2px;
+      margin-bottom: 4px;
+    }
+    .dni-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      flex: 1;
+    }
+    .dni-line {
+      height: 3px;
+      background: rgba(15, 23, 42, 0.4);
+      border-radius: 2px;
+    }
+    .dni-stripe {
+      height: 12px;
+      background: #1e293b;
+      border-radius: 2px;
+      margin-top: 2px;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    /* Capa de inicio y cola */
+    #overlay {
+      position: fixed; inset: 0; background: #090e13; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #06b6d4; color: #082f49;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #06b6d4;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>ADMINISTRACIÓN</h2>
+  <p>Saca el DNI de la cartera y pásalo por el lector</p>
+
+  <div class="terminal-case" id="terminalCase">
+    
+    <!-- Lector -->
+    <div class="scanner-box">
+      <div class="scanner-header">
+        <span class="screen-readout" id="readout">PASE EL DNI</span>
+        <div class="led-indicator" id="scannerLed"></div>
+      </div>
+      <div class="swipe-slot" id="slotArea">
+        <span class="slot-arrow">▶▶▶</span>
+      </div>
+    </div>
+
+    <!-- Cartera inferior -->
+    <div class="wallet-compartment" id="walletArea">
+      <div class="wallet-stitching"></div>
+      <span style="font-size: 0.75rem; color: #a16207; font-weight: bold; letter-spacing: 1px;">COMPARTIMENTO DE DNI</span>
+    </div>
+
+    <!-- Tarjeta DNI interactiva -->
+    <div id="dniCard">
+      <div class="dni-top">
+        <span>ESPAÑA - DNI</span>
+        <span>TRIPULANTE</span>
+      </div>
+      <div class="dni-body">
+        <div class="dni-photo">
+          <!-- Silueta tripulante -->
+          <svg viewBox="0 0 40 40" width="22" height="22">
+            <ellipse cx="20" cy="22" rx="10" ry="14" fill="#38bdf8"/>
+            <ellipse cx="23" cy="18" rx="6" ry="4" fill="#bae6fd"/>
+          </svg>
+        </div>
+        <div class="dni-lines">
+          <div class="dni-chip"></div>
+          <div class="dni-line" style="width: 80%;"></div>
+          <div class="dni-line" style="width: 95%;"></div>
+          <div class="dni-line" style="width: 60%;"></div>
+        </div>
+      </div>
+      <div class="dni-stripe"></div>
+    </div>
+
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const TASK_ID = 'dni';
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#06b6d4';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      const { data: doneData } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', TASK_ID);
+
+      if (doneData && doneData.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+        return;
+      }
+
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+      initCardPosition();
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Lógica del pase de DNI
+    const dniCard = document.getElementById('dniCard');
+    const slotArea = document.getElementById('slotArea');
+    const walletArea = document.getElementById('walletArea');
+    const terminalCase = document.getElementById('terminalCase');
+    const readout = document.getElementById('readout');
+    const scannerLed = document.getElementById('scannerLed');
+
+    let isDragging = false;
+    let isCompleted = false;
+    let grabOffsetX = 0, grabOffsetY = 0;
+    let swipeStartTime = 0;
+    let hasEnteredSlot = false;
+
+    function initCardPosition() {
+      const wRect = walletArea.getBoundingClientRect();
+      const cRect = terminalCase.getBoundingClientRect();
+      dniCard.style.left = `${(wRect.left - cRect.left) + 20}px`;
+      dniCard.style.top = `${(wRect.top - cRect.top) + 20}px`;
+      dniCard.style.transition = 'none';
+    }
+
+    dniCard.addEventListener('pointerdown', (e) => {
+      if (isCompleted) return;
+      isDragging = true;
+      hasEnteredSlot = false;
+      swipeStartTime = 0;
+
+      const cardRect = dniCard.getBoundingClientRect();
+      grabOffsetX = e.clientX - cardRect.left;
+      grabOffsetY = e.clientY - cardRect.top;
+      dniCard.setPointerCapture(e.pointerId);
+      dniCard.style.transition = 'none';
+      playBeep(320, 'sine', 0.08);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging || isCompleted) return;
+      const cRect = terminalCase.getBoundingClientRect();
+
+      let targetX = (e.clientX - cRect.left) - grabOffsetX;
+      let targetY = (e.clientY - cRect.top) - grabOffsetY;
+
+      dniCard.style.left = `${targetX}px`;
+      dniCard.style.top = `${targetY}px`;
+
+      // Comprobar posición respecto a la ranura del datáfono
+      const cardRect = dniCard.getBoundingClientRect();
+      const slotRect = slotArea.getBoundingClientRect();
+
+      const inVerticalRange = (cardRect.bottom > slotRect.top + 10) && (cardRect.top < slotRect.bottom - 10);
+      const isAtStart = cardRect.left <= slotRect.left + 50;
+      const isAtEnd = cardRect.right >= slotRect.right - 20;
+
+      if (inVerticalRange && isAtStart && !hasEnteredSlot) {
+        hasEnteredSlot = true;
+        swipeStartTime = performance.now();
+        readout.innerText = "LEYENDO...";
+        readout.style.color = "#facc15";
+        playBeep(450, 'square', 0.05);
+      }
+
+      if (hasEnteredSlot && isAtEnd) {
+        evaluateSwipe();
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (!isDragging || isCompleted) return;
+      isDragging = false;
+
+      // Si no completó la lectura o soltó la tarjeta, devolver a la cartera
+      dniCard.style.transition = 'left 0.3s ease, top 0.3s ease';
+      initCardPosition();
+
+      if (hasEnteredSlot) {
+        triggerError("LECTURA INCOMPLETA");
+      }
+    });
+
+    async function evaluateSwipe() {
+      isDragging = false;
+      const swipeDuration = performance.now() - swipeStartTime;
+
+      // Validación de velocidad realista
+      if (swipeDuration < 320) {
+        triggerError("DEMASIADO RÁPIDO");
+        resetToWallet();
+      } else if (swipeDuration > 1150) {
+        triggerError("DEMASIADO LENTO");
+        resetToWallet();
+      } else {
+        // Correcto
+        isCompleted = true;
+        readout.innerText = "ACEPTADO";
+        readout.style.color = "#22c55e";
+        scannerLed.className = 'led-indicator success';
+        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+        playBeep(780, 'sine', 0.2);
+        setTimeout(() => playBeep(1040, 'sine', 0.3), 150);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+        await releaseSession();
+      }
+    }
+
+    function triggerError(msg) {
+      readout.innerText = msg;
+      readout.style.color = "#ef4444";
+      scannerLed.className = 'led-indicator error';
+      playBeep(180, 'sawtooth', 0.25);
+      if (navigator.vibrate) navigator.vibrate(200);
+
+      setTimeout(() => {
+        if (!isCompleted) {
+          readout.innerText = "PASE EL DNI";
+          readout.style.color = "#38bdf8";
+          scannerLed.className = 'led-indicator';
+        }
+      }, 1400);
+    }
+
+    function resetToWallet() {
+      dniCard.style.transition = 'left 0.35s ease, top 0.35s ease';
+      initCardPosition();
+    }
+  </script>
+</body>
+</html>
