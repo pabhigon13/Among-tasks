@@ -13,7 +13,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem 0.8rem;
+      padding: 1rem 0.8rem 2.5rem 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -32,20 +32,19 @@
 
     #victoryOverlay {
       display: none;
-      position: fixed;
-      inset: 0;
+      position: fixed; inset: 0;
       background: radial-gradient(circle, #7f1d1d 0%, #200408 85%);
-      z-index: 150;
-      color: #fff;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
-      animation: victoryPulse 1.2s infinite alternate;
+      z-index: 150; color: #fff;
+      flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
-    @keyframes victoryPulse {
-      from { box-shadow: inset 0 0 40px #ef4444; }
-      to { box-shadow: inset 0 0 100px #b91c1c; }
+
+    /* Pantalla completa de Reunión */
+    #meetingOverlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 140; color: #fff;
+      flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
 
     #overlay {
@@ -70,157 +69,93 @@
     }
 
     .card {
-      background: #18090d;
-      border: 2px solid #3f1118;
-      border-radius: 12px;
-      padding: 0.9rem;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.6);
-      text-align: left;
+      background: #18090d; border: 2px solid #3f1118; border-radius: 12px;
+      padding: 0.9rem; box-shadow: 0 4px 15px rgba(0,0,0,0.6); text-align: left;
     }
     .card-title {
-      font-size: 0.85rem;
-      font-weight: 900;
-      color: #f87171;
-      letter-spacing: 1px;
-      margin-bottom: 0.6rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 0.85rem; font-weight: 900; color: #f87171; letter-spacing: 1px;
+      margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center;
     }
 
     .progress-track {
-      width: 100%;
-      height: 14px;
-      background: #000;
-      border-radius: 7px;
-      border: 1px solid #4c0519;
-      overflow: hidden;
-      margin-top: 0.3rem;
+      width: 100%; height: 14px; background: #000; border-radius: 7px;
+      border: 1px solid #4c0519; overflow: hidden; margin-top: 0.3rem;
     }
     .progress-fill {
-      height: 100%;
-      width: 0%;
+      height: 100%; width: 0%;
       background: linear-gradient(90deg, #10b981, #22c55e);
-      box-shadow: 0 0 10px #22c55e;
-      transition: width 0.3s ease;
+      box-shadow: 0 0 10px #22c55e; transition: width 0.3s ease;
     }
 
     .task-details-toggle {
-      background: #2b0b12;
-      border: 1px solid #450a0a;
-      border-radius: 6px;
-      color: #fca5a5;
-      font-size: 0.75rem;
-      font-weight: bold;
-      padding: 0.4rem 0.6rem;
-      width: 100%;
-      margin-top: 0.6rem;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      background: #2b0b12; border: 1px solid #450a0a; border-radius: 6px;
+      color: #fca5a5; font-size: 0.75rem; font-weight: bold; padding: 0.4rem 0.6rem;
+      width: 100%; margin-top: 0.6rem; cursor: pointer; display: flex; justify-content: space-between;
     }
     .task-breakdown-list {
-      display: none;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      margin-top: 0.6rem;
+      display: none; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 0.6rem;
     }
     .task-breakdown-item {
-      background: #0d0406;
-      border: 1px solid #29080e;
-      border-radius: 6px;
-      padding: 0.4rem 0.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.72rem;
-    }
-    .task-breakdown-count {
-      font-weight: 900;
-      color: #22c55e;
-      font-family: monospace;
-      font-size: 0.8rem;
+      background: #0d0406; border: 1px solid #29080e; border-radius: 6px;
+      padding: 0.4rem 0.5rem; display: flex; justify-content: space-between; font-size: 0.72rem;
     }
 
     .sabotage-btn {
-      width: 100%;
-      padding: 0.85rem;
-      margin-bottom: 0.6rem;
-      border-radius: 10px;
-      border: 2px solid #ef4444;
-      background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
-      color: #fff;
-      font-size: 0.95rem;
-      font-weight: 900;
-      letter-spacing: 1px;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 4px 0 #2b0606;
-      transition: all 0.1s;
-    }
-    .sabotage-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #2b0606;
+      width: 100%; padding: 0.85rem; margin-bottom: 0.6rem; border-radius: 10px;
+      border: 2px solid #ef4444; background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+      color: #fff; font-size: 0.95rem; font-weight: 900; letter-spacing: 1px; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 0 #2b0606;
     }
     .sabotage-btn.active-now {
-      border-color: #facc15;
-      background: linear-gradient(180deg, #a16207 0%, #713f12 100%);
+      border-color: #facc15; background: linear-gradient(180deg, #a16207 0%, #713f12 100%);
       box-shadow: 0 0 14px #facc15;
-      animation: pulseAlert 1s infinite alternate;
     }
     .sabotage-btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-      border-color: #555;
-      background: #222;
-      box-shadow: none;
-      transform: none;
-    }
-    @keyframes pulseAlert {
-      from { box-shadow: 0 0 6px #facc15; }
-      to { box-shadow: 0 0 18px #facc15; }
+      opacity: 0.45; cursor: not-allowed; border-color: #555; background: #222; box-shadow: none;
     }
 
-    .radar-list {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      font-size: 0.75rem;
-    }
+    .radar-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 0.75rem; }
     .radar-item {
-      background: #0f0407;
-      border: 1px solid #2b0b12;
-      border-radius: 6px;
-      padding: 0.5rem;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
+      background: #0f0407; border: 1px solid #2b0b12; border-radius: 6px;
+      padding: 0.5rem; display: flex; flex-direction: column; gap: 2px;
     }
-    .radar-item.occupied {
-      border-color: #ef4444;
-      background: rgba(239, 68, 68, 0.1);
+    .radar-item.occupied { border-color: #ef4444; background: rgba(239, 68, 68, 0.1); }
+
+    /* Botón de Reporte Idéntico al de Tripulante */
+    .btn-report {
+      width: 100%; padding: 1.1rem;
+      background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
+      color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 2px;
+      border: 3px solid #f87171; border-radius: 14px; cursor: pointer;
+      box-shadow: 0 6px 0 #450a0a, 0 10px 20px rgba(220, 38, 38, 0.4);
+      display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .radar-status { font-weight: bold; }
-    .radar-status.free { color: #22c55e; }
-    .radar-status.busy { color: #ef4444; }
+    .btn-report:active { transform: translateY(4px); box-shadow: 0 2px 0 #450a0a; }
   </style>
 </head>
 <body>
+
+  <!-- Alerta Reunión -->
+  <div id="meetingOverlay">
+    <div style="font-size: 4rem; margin-bottom: 0.5rem;">📢🚨</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡CADÁVER REPORTADO!</h1>
+    <p id="meetingReporter" style="color: #93c5fd; font-size: 1.1rem; margin: 0 0 1rem 0; font-weight: bold;"></p>
+    <p style="color: #e2e8f0; font-size: 0.95rem; max-width: 290px; margin: 0;">
+      Sabotajes bloqueados. Acude a la mesa central a fingir inocencia y debatir con la tripulación.
+    </p>
+  </div>
 
   <div id="victoryOverlay">
     <div style="font-size: 4rem; margin-bottom: 0.5rem;">👑☠️</div>
     <h1 style="font-size: 2.2rem; color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡VICTORIA DEL IMPOSTOR!</h1>
     <p style="color: #fecaca; font-size: 1.1rem; max-width: 300px; margin: 0;">
-      La tripulación no selló la fuga de gas a tiempo. La nave ha quedado completamente intoxicada.
+      La tripulación no selló la fuga de gas a tiempo. Nave intoxicada.
     </p>
   </div>
 
   <div id="overlay">
     <h2 id="ovTitle" style="color: #ef4444; margin-bottom: 0.3rem;">TERMINAL DEL IMPOSTOR</h2>
-    <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y configuración de la partida</p>
+    <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y partida</p>
     
     <div id="busyAlert" class="busy-box">
       <div style="font-size: 2.2rem; margin-bottom: 0.4rem;">🚫🕵️</div>
@@ -240,6 +175,7 @@
       <p class="subtitle">Canal encubierto de interferencia y sabotaje</p>
     </div>
 
+    <!-- Progreso Global -->
     <div class="card">
       <div class="card-title">
         <span>PROGRESO DE TRIPULACIÓN</span>
@@ -258,6 +194,7 @@
       <div class="task-breakdown-list" id="taskBreakdownGrid"></div>
     </div>
 
+    <!-- Sabotajes -->
     <div class="card">
       <div class="card-title">
         <span>SISTEMA DE SABOTAJE</span>
@@ -280,12 +217,24 @@
       </button>
     </div>
 
+    <!-- Radar -->
     <div class="card">
       <div class="card-title">
         <span>RADAR DE OCUPACIÓN</span>
         <span style="font-size:0.7rem; color:#94a3b8;">EN VIVO</span>
       </div>
       <div class="radar-list" id="radarGrid"></div>
+    </div>
+
+    <!-- Botón de Reporte Idéntico -->
+    <div>
+      <button class="btn-report" onclick="reportBody()">
+        <span>📢</span>
+        <span>REPORTAR CADÁVER</span>
+      </button>
+      <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem;">
+        Púlsalo para fingir que has encontrado el cuerpo y convocar votación
+      </div>
     </div>
   </div>
 
@@ -295,13 +244,13 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Identificador único de esta pestaña/dispositivo para evitar colisiones
     const mySessionToken = 'DEV_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let totalCrewCount = 4;
     let heartbeatTimer = null;
     let showBreakdown = false;
+    let isMeetingActive = false;
 
     const COOLDOWNS = { luces: 35, fuga: 60, controles: 40 };
     const lastFinishedTime = { luces: 0, fuga: 0, controles: 0 };
@@ -319,9 +268,15 @@
 
     let currentSabotages = {};
 
+    // Auto-login si viene de Join.html
+    if (currentPlayer) {
+      document.getElementById('overlay').style.display = 'none';
+      initImpostor();
+    }
+
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'TERMINAL DEL IMPOSTOR';
-      document.getElementById('ovDesc').innerText = 'Identificación y configuración de la partida';
+      document.getElementById('ovDesc').innerText = 'Identificación y configuración';
       document.getElementById('busyAlert').style.display = 'none';
       const inputName = document.getElementById('playerName');
       const inputCount = document.getElementById('crewCountInput');
@@ -337,7 +292,6 @@
     async function checkPlayer() {
       const inputName = document.getElementById('playerName');
       const inputCount = document.getElementById('crewCountInput');
-
       const name = inputName.value.trim().toUpperCase();
       const count = parseInt(inputCount.value.trim(), 10);
 
@@ -345,25 +299,17 @@
       if (isNaN(count) || count <= 0) return alert('Introduce un número de tripulantes válido');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', name);
       totalCrewCount = count;
 
-      // Consultar si ya existe una sesión activa en la terminal
-      const { data: session } = await client
-        .from('active_sessions')
-        .select('*')
-        .eq('task_name', TASK_ID)
-        .maybeSingle();
-
+      const { data: session } = await client.from('active_sessions').select('*').eq('task_name', TASK_ID).maybeSingle();
       const now = Date.now();
       if (session) {
         const lastSeen = new Date(session.last_heartbeat).getTime();
         const secondsAgo = (now - lastSeen) / 1000;
-
-        // Si hay una sesión activa de menos de 12 segundos generada por otro token/dispositivo:
         const sessionTokenInDb = session.player_name.split(':::')[1] || '';
         if (secondsAgo < 12 && sessionTokenInDb !== mySessionToken) {
           document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
-          document.getElementById('ovDesc').innerText = 'Canal exclusivo restringido';
           document.getElementById('busyAlert').style.display = 'block';
           document.getElementById('busyMsg').innerHTML = 'Este panel está siendo usado por el impostor.<br><b>Tú no lo eres</b>, ve a hacer tareas e investigar.';
           inputName.style.display = 'none';
@@ -375,17 +321,19 @@
       }
 
       await client.from('game_settings').upsert({ id: 'global', crew_count: totalCrewCount, updated_at: new Date().toISOString() });
-      await takeSession();
       document.getElementById('overlay').style.display = 'none';
-      heartbeatTimer = setInterval(takeSession, 3000);
+      initImpostor();
+    }
 
+    function initImpostor() {
+      takeSession();
+      heartbeatTimer = setInterval(takeSession, 3000);
       pollData();
       setInterval(pollData, 1500);
       setInterval(updateCooldownUI, 500);
     }
 
     async function takeSession() {
-      // Guardamos NOMBRE:::TOKEN para validar sesión única por dispositivo sin mostrar el token al resto
       await client.from('active_sessions').upsert({
         task_name: TASK_ID,
         player_name: `${currentPlayer}:::${mySessionToken}`,
@@ -411,31 +359,40 @@
 
     async function pollData() {
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
-      if (settings && settings.crew_count) {
-        totalCrewCount = settings.crew_count;
+      if (settings && settings.crew_count) totalCrewCount = settings.crew_count;
+
+      // 1. Comprobar reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetingOverlay = document.getElementById('meetingOverlay');
+
+      if (meeting && meeting.active) {
+        isMeetingActive = true;
+        meetingOverlay.style.display = 'flex';
+        document.getElementById('meetingReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+      } else {
+        isMeetingActive = false;
+        meetingOverlay.style.display = 'none';
       }
 
+      // 2. Sabotajes
       const { data: sabs } = await client.from('sabotages').select('*');
       if (sabs) {
         sabs.forEach(s => {
           const prev = currentSabotages[s.id];
-          if (prev && prev.active && !s.active) {
-            lastFinishedTime[s.id] = Date.now();
-          }
+          if (prev && prev.active && !s.active) lastFinishedTime[s.id] = Date.now();
           currentSabotages[s.id] = s;
         });
       }
 
+      // 3. Tareas
       const { data: doneTasks } = await client.from('completed_tasks').select('*');
       if (doneTasks) {
         const totalMaxTasks = totalCrewCount * ALL_TASKS.length;
         const totalCompleted = doneTasks.length;
-
         const globalPercent = Math.min(100, Math.round((totalCompleted / totalMaxTasks) * 100));
         document.getElementById('progressBar').style.width = `${globalPercent}%`;
         document.getElementById('progressText').innerText = `${globalPercent}%`;
-        document.getElementById('tasksCount').innerText = `${totalCompleted}/${totalMaxTasks} tareas completadas en total (${totalCrewCount} tripulantes)`;
-
+        document.getElementById('tasksCount').innerText = `${totalCompleted}/${totalMaxTasks} tareas completadas (${totalCrewCount} tripulantes)`;
         renderTaskBreakdown(doneTasks);
       }
 
@@ -446,17 +403,12 @@
     function renderTaskBreakdown(doneTasks) {
       const grid = document.getElementById('taskBreakdownGrid');
       grid.innerHTML = '';
-
       ALL_TASKS.forEach(t => {
         const completedThisTask = doneTasks.filter(item => item.task_name === t.id);
         const uniquePlayers = new Set(completedThisTask.map(i => i.player_name)).size;
-
         const el = document.createElement('div');
         el.className = 'task-breakdown-item';
-        el.innerHTML = `
-          <span>${t.name}</span>
-          <span class="task-breakdown-count">${uniquePlayers}/${totalCrewCount}</span>
-        `;
+        el.innerHTML = `<span>${t.name}</span><span style="font-weight:900; color:#22c55e;">${uniquePlayers}/${totalCrewCount}</span>`;
         grid.appendChild(el);
       });
     }
@@ -465,6 +417,13 @@
       const now = Date.now();
       const anyActive = Object.values(currentSabotages).some(s => s && s.active);
       const globalLabel = document.getElementById('globalStatusLabel');
+
+      if (isMeetingActive) {
+        globalLabel.innerText = '🚨 EN REUNIÓN (BLOQUEADO)';
+        globalLabel.style.color = '#ef4444';
+        ['btnLuces', 'btnFuga', 'btnControles'].forEach(id => document.getElementById(id).disabled = true);
+        return;
+      }
 
       if (anyActive) {
         globalLabel.innerText = '⚠️ SABOTAJE EN CURSO';
@@ -488,38 +447,19 @@
       if (info && info.active) {
         btn.classList.add('active-now');
         btn.disabled = false;
-
         const elapsed = Math.floor((now - new Date(info.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
-
         badge.innerText = `⏳ ${remaining}s`;
-
-        if (remaining === 0) {
-          victoryEl.style.display = 'flex';
-        } else {
-          victoryEl.style.display = 'none';
-        }
+        victoryEl.style.display = remaining === 0 ? 'flex' : 'none';
         return;
       }
 
       victoryEl.style.display = 'none';
       btn.classList.remove('active-now');
-
-      if (anyActive) {
-        btn.disabled = true;
-        badge.innerText = 'BLOQUEADO';
-        return;
-      }
-
+      if (anyActive) { btn.disabled = true; badge.innerText = 'BLOQUEADO'; return; }
       const elapsed = Math.floor((now - lastFinishedTime['fuga']) / 1000);
       const remaining = COOLDOWNS['fuga'] - elapsed;
-
-      if (lastFinishedTime['fuga'] > 0 && remaining > 0) {
-        btn.disabled = true;
-        badge.innerText = `${remaining}s`;
-        return;
-      }
-
+      if (lastFinishedTime['fuga'] > 0 && remaining > 0) { btn.disabled = true; badge.innerText = `${remaining}s`; return; }
       btn.disabled = false;
       badge.innerText = 'LISTO';
     }
@@ -538,46 +478,35 @@
         badge.innerText = 'EN CURSO';
         return;
       }
-
       btn.classList.remove('active-now');
-
-      if (anyActive) {
-        btn.disabled = true;
-        badge.innerText = 'BLOQUEADO';
-        return;
-      }
-
-      if (lastFinishedTime[sabId] > 0 && remaining > 0) {
-        btn.disabled = true;
-        badge.innerText = `${remaining}s`;
-        return;
-      }
-
+      if (anyActive) { btn.disabled = true; badge.innerText = 'BLOQUEADO'; return; }
+      if (lastFinishedTime[sabId] > 0 && remaining > 0) { btn.disabled = true; badge.innerText = `${remaining}s`; return; }
       btn.disabled = false;
       badge.innerText = 'LISTO';
     }
 
     async function triggerSabotage(sabId) {
+      if (isMeetingActive) return alert('No se puede sabotear durante una reunión.');
       const info = currentSabotages[sabId];
       if (info && info.active) return;
 
-      const labels = {
-        luces: 'APAGAR LUCES',
-        fuga: 'FUGA DE GAS (CRÍTICO 45s)',
-        controles: 'INVERTIR CONTROLES'
-      };
+      const labels = { luces: 'APAGAR LUCES', fuga: 'FUGA DE GAS (CRÍTICO 45s)', controles: 'INVERTIR CONTROLES' };
+      if (!confirm(`¿Lanzar sabotaje: ${labels[sabId]}?`)) return;
 
-      const ok = confirm(`¿Lanzar sabotaje: ${labels[sabId]}?`);
-      if (!ok) return;
+      await client.from('sabotages').upsert({ id: sabId, active: true, started_at: new Date().toISOString(), fixed_by: null });
+      pollData();
+    }
 
-      await client.from('sabotages').upsert({
-        id: sabId,
+    async function reportBody() {
+      if (!confirm('¿Reportar cadáver y convocar reunión?')) return;
+      // Pausar sabotajes activos si los hubiera
+      await client.from('sabotages').update({ active: false }).neq('id', '');
+      await client.from('game_meetings').upsert({
+        id: 'current',
         active: true,
-        started_at: new Date().toISOString(),
-        fixed_by: null
+        reported_by: currentPlayer,
+        started_at: new Date().toISOString()
       });
-
-      if (navigator.vibrate) navigator.vibrate([100, 50, 200]);
       pollData();
     }
 
@@ -585,28 +514,17 @@
       const grid = document.getElementById('radarGrid');
       grid.innerHTML = '';
       const now = Date.now();
-
       ALL_TASKS.forEach(t => {
         const sess = sessions.find(s => s.task_name === t.id);
         let isOccupied = false;
         let occupant = '';
-
         if (sess) {
           const secondsAgo = (now - new Date(sess.last_heartbeat).getTime()) / 1000;
-          if (secondsAgo < 12) {
-            isOccupied = true;
-            occupant = sess.player_name.split(':::')[0];
-          }
+          if (secondsAgo < 12) { isOccupied = true; occupant = sess.player_name.split(':::')[0]; }
         }
-
         const el = document.createElement('div');
         el.className = `radar-item ${isOccupied ? 'occupied' : ''}`;
-        el.innerHTML = `
-          <strong style="color:#f87171;">${t.name}</strong>
-          <span class="radar-status ${isOccupied ? 'busy' : 'free'}">
-            ${isOccupied ? `🔴 ${occupant}` : '🟢 Libre'}
-          </span>
-        `;
+        el.innerHTML = `<strong style="color:#f87171;">${t.name}</strong><span style="font-weight:bold; color:${isOccupied ? '#ef4444' : '#22c55e'};">${isOccupied ? `🔴 ${occupant}` : '🟢 Libre'}</span>`;
         grid.appendChild(el);
       });
     }
