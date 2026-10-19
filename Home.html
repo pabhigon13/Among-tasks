@@ -172,10 +172,10 @@
         updated_at: new Date().toISOString()
       });
 
-      // 3. Generar enlace exacto apuntando a join.html
+      // 3. Generar enlace exacto apuntando a Join.html (con mayúscula)
       const currentOrigin = window.location.origin;
       const currentPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
-      const joinUrl = `${currentOrigin}${currentPath}/join.html`;
+      const joinUrl = `${currentOrigin}${currentPath}/Join.html`;
 
       const qrBox = document.getElementById('qrcode');
       qrBox.innerHTML = '';
