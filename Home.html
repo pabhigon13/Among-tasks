@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Lobby Central - Among Tasks</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Generador de QR ligero sin dependencias externas complejas -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    body {
+      background: radial-gradient(circle at center, #0b1329 0%, #030712 100%);
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1.2rem 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    .lobby-card {
+      background: #111827;
+      border: 3px solid #1f2937;
+      border-radius: 20px;
+      padding: 1.5rem 1.2rem;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    h1 {
+      margin: 0;
+      color: #38bdf8;
+      font-size: 1.8rem;
+      letter-spacing: 2px;
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    p.subtitle {
+      margin: 0;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    /* Caja de inputs y botones */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      text-align: left;
+    }
+    label {
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #cbd5e1;
+      letter-spacing: 1px;
+    }
+    input {
+      width: 100%;
+      padding: 0.85rem;
+      border-radius: 10px;
+      border: 2px solid #334155;
+      background: #0b0f19;
+      color: #fff;
+      font-size: 1.05rem;
+      text-align: center;
+      font-weight: bold;
+    }
+    input:focus {
+      outline: none;
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
+    }
+
+    .btn-main {
+      padding: 0.95rem;
+      background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
+      color: #fff;
+      border: 2px solid #38bdf8;
+      border-radius: 12px;
+      font-size: 1.05rem;
+      font-weight: 900;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #075985;
+      transition: all 0.1s;
+    }
+    .btn-main:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #075985;
+    }
+
+    /* Contenedor del Código QR */
+    #qrContainer {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.8rem;
+      background: #080d1a;
+      border: 2px dashed #334155;
+      border-radius: 14px;
+      padding: 1rem;
+    }
+    #qrcode {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Pantallas completas de Revelación de Rol */
+    .role-reveal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      animation: zoomIn 0.4s ease-out;
+    }
+    @keyframes zoomIn {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .role-reveal.crew {
+      background: radial-gradient(circle, #0284c7 0%, #031525 90%);
+    }
+    .role-reveal.impostor {
+      background: radial-gradient(circle, #dc2626 0%, #200408 90%);
+    }
+    .role-title {
+      font-size: 2.8rem;
+      font-weight: 900;
+      letter-spacing: 4px;
+      margin: 0.8rem 0 0.4rem 0;
+    }
+    .role-desc {
+      font-size: 1.1rem;
+      max-width: 300px;
+      color: #e2e8f0;
+      line-height: 1.4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Revelación: Tripulante -->
+  <div id="revealCrew" class="role-reveal crew">
+    <div style="font-size: 5rem;">🧑‍🚀</div>
+    <div class="role-title" style="color: #38bdf8;">TRIPULANTE</div>
+    <p class="role-desc">Hay 1 impostor entre nosotros.<br>Completa tus tareas asignadas y expúlsalo.</p>
+    <div style="margin-top: 1.5rem; font-size: 0.8rem; color: #93c5fd;">Accediendo a tu terminal...</div>
+  </div>
+
+  <!-- Revelación: Impostor -->
+  <div id="revealImpostor" class="role-reveal impostor">
+    <div style="font-size: 5rem;">🔪</div>
+    <div class="role-title" style="color: #f87171;">IMPOSTOR</div>
+    <p class="role-desc">Sabotea los sistemas críticos y elimina a la tripulación sin ser descubierto.</p>
+    <div style="margin-top: 1.5rem; font-size: 0.8rem; color: #fca5a5;">Iniciando canal encubierto...</div>
+  </div>
+
+  <div class="lobby-card">
+    <div>
+      <h1>AMONG TASKS</h1>
+      <p class="subtitle">Control de Acceso y Reparto de Roles</p>
+    </div>
+
+    <!-- Pestañas o Modo: Jugador vs Organizador -->
+    <div id="playerSection" class="field-group">
+      <label>TU NOMBRE DE JUGADOR:</label>
+      <input id="playerNameInput" placeholder="Ej: PABLO" autocomplete="off" />
+      <button class="btn-main" onclick="joinGame()">ENTRAR A LA NAVE</button>
+    </div>
+
+    <!-- Sección de Anfitrión / Desplegar QR -->
+    <div style="border-top: 1px solid #1e293b; padding-top: 0.8rem;">
+      <button id="toggleHostBtn" style="background: none; border: none; color: #64748b; font-size: 0.75rem; font-weight: bold; cursor: pointer;" onclick="toggleHost()">
+        ⚙️ Configurar nueva partida (Anfitrión)
+      </button>
+
+      <div id="hostSection" style="display: none; margin-top: 0.8rem; flex-direction: column; gap: 0.8rem;">
+        <div class="field-group">
+          <label>Nº TOTAL DE JUGADORES (Tripulantes + 1 Impostor):</label>
+          <input id="hostTotalPlayers" type="number" min="3" max="20" value="8" />
+        </div>
+        <button class="btn-main" style="background: linear-gradient(180deg, #10b981 0%, #059669 100%); border-color: #34d399; box-shadow: 0 4px 0 #047857;" onclick="createGameSession()">
+          GENERAR SALA Y QR
+        </button>
+
+        <div id="qrContainer">
+          <div style="font-size: 0.75rem; color: #94a3b8; font-weight: bold;">ESCANEAD ESTE QR PARA ENTRAR:</div>
+          <div id="qrcode"></div>
+          <div id="lobbyStats" style="font-size: 0.75rem; color: #34d399; font-weight: bold;">Esperando jugadores...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playSound(freq, duration = 0.25, type = 'sine') {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function toggleHost() {
+      const sec = document.getElementById('hostSection');
+      sec.style.display = (sec.style.display === 'none' || !sec.style.display) ? 'flex' : 'none';
+    }
+
+    // 1. ANFITRIÓN: Inicializa la sala y genera el QR
+    async function createGameSession() {
+      const total = parseInt(document.getElementById('hostTotalPlayers').value, 10);
+      if (isNaN(total) || total < 3) return alert('Introduce un mínimo de 3 jugadores.');
+
+      const ok = confirm(`¿Iniciar nueva partida para ${total} personas (1 Impostor y ${total - 1} Tripulantes)? Se resetearán los roles anteriores.`);
+      if (!ok) return;
+
+      // Resetear jugadores y roles de la partida anterior
+      await client.from('game_players').delete().neq('id', 0);
+
+      // Guardar el número de tripulantes exacto (total - 1) en game_settings
+      await client.from('game_settings').upsert({
+        id: 'global',
+        crew_count: total - 1,
+        updated_at: new Date().toISOString()
+      });
+
+      // Dibujar QR que apunta directamente a esta misma URL
+      const qrBox = document.getElementById('qrcode');
+      qrBox.innerHTML = '';
+      const currentUrl = window.location.href.split('?')[0];
+
+      new QRCode(qrBox, {
+        text: currentUrl,
+        width: 170,
+        height: 170,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+
+      document.getElementById('qrContainer').style.display = 'flex';
+      listenPlayersCount(total);
+    }
+
+    function listenPlayersCount(totalTarget) {
+      setInterval(async () => {
+        const { data: players } = await client.from('game_players').select('player_name');
+        const count = players ? players.length : 0;
+        document.getElementById('lobbyStats').innerText = `Jugadores dentro: ${count} / ${totalTarget}`;
+      }, 2000);
+    }
+
+    // 2. JUGADOR: Unirse y recibir rol
+    async function joinGame() {
+      const input = document.getElementById('playerNameInput');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      // Consultar jugadores ya registrados
+      const { data: existingPlayers } = await client.from('game_players').select('*');
+
+      // Si ya está registrado en esta partida, recuperar su rol
+      const me = (existingPlayers || []).find(p => p.player_name === name);
+      if (me) {
+        localStorage.setItem('among_player_name', name);
+        revealAndRedirect(me.role);
+        return;
+      }
+
+      // Obtener el total configurado por el anfitrión
+      const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
+      const crewCount = settings && settings.crew_count ? settings.crew_count : 7;
+      const totalPlayers = crewCount + 1;
+
+      const registeredCount = (existingPlayers || []).length;
+      if (registeredCount >= totalPlayers) {
+        return alert('La sala ya está completa.');
+      }
+
+      // Comprobar si el rol de impostor ya fue asignado
+      const hasImpostor = (existingPlayers || []).some(p => p.role === 'impostor');
+      const slotsRemaining = totalPlayers - registeredCount;
+
+      let assignedRole = 'tripulante';
+
+      if (!hasImpostor) {
+        // Probabilidad matemática exacta de ser impostor según los huecos que quedan
+        const shouldBeImpostor = (Math.random() < (1 / slotsRemaining)) || (slotsRemaining === 1);
+        if (shouldBeImpostor) {
+          assignedRole = 'impostor';
+        }
+      }
+
+      // Guardar en Supabase
+      const { error } = await client.from('game_players').insert([{
+        player_name: name,
+        role: assignedRole
+      }]);
+
+      if (error) {
+        alert('Error al registrarte o nombre repetido. Inténtalo de nuevo.');
+        return;
+      }
+
+      localStorage.setItem('among_player_name', name);
+      revealAndRedirect(assignedRole);
+    }
+
+    function revealAndRedirect(role) {
+      if (role === 'impostor') {
+        playSound(150, 0.6, 'sawtooth');
+        if (navigator.vibrate) navigator.vibrate([200, 100, 300]);
+        document.getElementById('revealImpostor').style.display = 'flex';
+        setTimeout(() => {
+          window.location.href = 'impostor.html';
+        }, 3200);
+      } else {
+        playSound(440, 0.4, 'sine');
+        if (navigator.vibrate) navigator.vibrate(100);
+        document.getElementById('revealCrew').style.display = 'flex';
+        setTimeout(() => {
+          window.location.href = 'tripulante.html';
+        }, 3200);
+      }
+    }
+  </script>
+</body>
+</html>
