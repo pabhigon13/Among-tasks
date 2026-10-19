@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Terminal de Tripulante</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -131,7 +134,6 @@
       <p id="playerGreeting" style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">Validando credenciales...</p>
     </div>
 
-    <!-- Progreso Global -->
     <div class="card" style="border-color: #065f46;">
       <div class="card-title">
         <span style="color: #34d399;">PROGRESO TOTAL DE TRIPULACIÓN</span>
@@ -143,7 +145,6 @@
       <div id="globalCountLabel" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.35rem;">Cargando...</div>
     </div>
 
-    <!-- Progreso Individual -->
     <div class="card">
       <div class="card-title">
         <span>MIS TAREAS INDIVIDUALES</span>
@@ -154,7 +155,6 @@
       </div>
     </div>
 
-    <!-- Lista de tareas -->
     <div class="card">
       <div class="card-title">
         <span>ESTADO DE TAREAS</span>
@@ -163,7 +163,6 @@
       <div class="task-list" id="myTasksList"></div>
     </div>
 
-    <!-- Botón de Reporte -->
     <div>
       <button class="btn-report" onclick="reportBody()">
         <span>📢</span>
@@ -194,50 +193,34 @@
       { id: 'cucarachas', name: '🪳 Aplastar Cucarachas' }
     ];
 
-    function redirectToHome() {
+    function kickToHome() {
       localStorage.removeItem('among_player_name');
       const origin = window.location.origin;
       const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
       window.location.replace(`${origin}${path}/Home.html`);
     }
 
-    // Comprobación de seguridad inicial
-    async function verifyPlayerAccess() {
+    async function verifyAndPoll() {
       if (!currentPlayer) {
-        redirectToHome();
+        kickToHome();
         return;
       }
 
-      const { data: player } = await client
+      // Comprobación de existencia en la base de datos
+      const { data: player, error } = await client
         .from('game_players')
         .select('*')
         .eq('player_name', currentPlayer)
         .maybeSingle();
 
-      // Si no existe en la partida o su rol no es tripulante, fuera
-      if (!player || player.role !== 'tripulante') {
-        redirectToHome();
+      if (error || !player || player.role !== 'tripulante') {
+        kickToHome();
         return;
       }
 
       document.getElementById('playerGreeting').innerText = `Tripulante: ${currentPlayer}`;
-      pollData();
-      setInterval(pollData, 1500);
-    }
 
-    async function pollData() {
-      // Vigilante continuo: comprobar si la partida sigue existiendo para este jugador
-      const { data: player } = await client
-        .from('game_players')
-        .select('*')
-        .eq('player_name', currentPlayer)
-        .maybeSingle();
-
-      if (!player || player.role !== 'tripulante') {
-        redirectToHome();
-        return;
-      }
-
+      // Configuración de partida
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
       if (settings && settings.crew_count) totalCrewCount = settings.crew_count;
 
@@ -335,10 +318,12 @@
         reported_by: currentPlayer,
         started_at: new Date().toISOString()
       });
-      pollData();
+      verifyAndPoll();
     }
 
-    verifyPlayerAccess();
+    // Arranque inmediato y bucle cada 1 segundo
+    verifyAndPoll();
+    setInterval(verifyAndPoll, 1000);
   </script>
 </body>
 </html>
