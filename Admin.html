@@ -12,7 +12,6 @@
 
     .admin-container { max-width: 1150px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
 
-    /* Barra superior de progreso global */
     .overview-card {
       background: #161b26; border: 2px solid #334155; border-radius: 14px; padding: 1.2rem;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5); text-align: left;
@@ -28,11 +27,10 @@
     }
     .crew-input-box { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #94a3b8; }
     .crew-input {
-      width: 55px; padding: 0.3rem; border-radius: 6px; border: 1px solid #475569;
-      background: #0f172a; color: #fff; text-align: center; font-weight: bold;
+      width: 60px; padding: 0.35rem; border-radius: 6px; border: 1px solid #475569;
+      background: #0f172a; color: #fff; text-align: center; font-weight: bold; font-size: 1rem;
     }
 
-    /* Módulo del Impostor: Sabotajes + Radar */
     .impostor-monitor {
       background: #1c0a0f; border: 2px solid #7f1d1d; border-radius: 14px; padding: 1.2rem;
       box-shadow: 0 0 25px rgba(239, 68, 68, 0.15); text-align: left;
@@ -54,7 +52,6 @@
     }
     @keyframes alertPulse { from { box-shadow: 0 0 4px #facc15; } to { box-shadow: 0 0 14px #facc15; } }
 
-    /* Radar de ocupación */
     .radar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
     .radar-tile {
       background: #0f0407; border: 1px solid #2b0b12; border-radius: 8px; padding: 0.6rem;
@@ -62,7 +59,6 @@
     }
     .radar-tile.busy { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); }
 
-    /* Rejilla de tareas clásicas */
     .tasks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; }
     .card {
       background: #161b26; border: 2px solid #334155; border-radius: 12px; padding: 1.1rem;
@@ -92,7 +88,6 @@
 
   <div class="admin-container">
 
-    <!-- Progreso Global -->
     <div class="overview-card">
       <div class="overview-header">
         <div>
@@ -100,8 +95,8 @@
           <div id="tasksSummaryText" style="color: #94a3b8; font-size: 0.8rem; margin-top: 2px;">Cargando datos...</div>
         </div>
         <div class="crew-input-box">
-          <span>Tripulantes:</span>
-          <input id="adminCrewCount" class="crew-input" type="number" min="1" max="20" value="4" onchange="updateCrewCount()" />
+          <span>Nº Tripulantes:</span>
+          <input id="adminCrewCount" class="crew-input" type="number" min="1" max="20" value="4" onchange="saveCrewCount()" />
           <span id="percentBadge" style="color: #22c55e; font-size: 1.2rem; font-weight: 900; margin-left: 10px;">0%</span>
         </div>
       </div>
@@ -110,14 +105,13 @@
       </div>
     </div>
 
-    <!-- Módulo de espionaje del Impostor -->
+    <!-- Monitor del Impostor -->
     <div class="impostor-monitor">
       <div class="monitor-title">
         <span>🕵️ RADAR Y MONITOR DEL IMPOSTOR</span>
         <span id="impostorSessionBadge" style="font-size: 0.75rem; color: #94a3b8;">Sin impostor conectado</span>
       </div>
 
-      <!-- Estado de Sabotajes -->
       <div style="font-size: 0.75rem; color: #fca5a5; font-weight: bold; margin-bottom: 0.4rem; letter-spacing: 1px;">SABOTAJES ACTIVOS:</div>
       <div class="sabotage-deck">
         <div class="sabotage-pill" id="pillLuces">
@@ -145,12 +139,11 @@
         </div>
       </div>
 
-      <!-- Radar de Ocupación -->
       <div style="font-size: 0.75rem; color: #fca5a5; font-weight: bold; margin-bottom: 0.4rem; letter-spacing: 1px;">UBICACIÓN DE JUGADORES:</div>
       <div class="radar-grid" id="adminRadarGrid"></div>
     </div>
 
-    <!-- Tareas individuales -->
+    <!-- Tareas -->
     <div class="tasks-grid">
       <div class="card">
         <h2 style="margin: 0; color: #f59e0b; font-size: 1.05rem;">⚡ Cables</h2>
@@ -234,13 +227,26 @@
       { id: 'cucarachas', name: '🪳 Cucarachas', countId: 'countCucarachas', listId: 'listCucarachas' }
     ];
 
-    function updateCrewCount() {
+    async function saveCrewCount() {
       const val = parseInt(document.getElementById('adminCrewCount').value, 10);
-      if (val > 0) crewCount = val;
-      loadAll();
+      if (val > 0) {
+        crewCount = val;
+        await client.from('game_settings').upsert({ id: 'global', crew_count: crewCount, updated_at: new Date().toISOString() });
+        loadAll();
+      }
     }
 
     async function loadAll() {
+      // 0. Cargar número de tripulantes compartido de Supabase
+      const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
+      if (settings && settings.crew_count) {
+        crewCount = settings.crew_count;
+        const input = document.getElementById('adminCrewCount');
+        if (document.activeElement !== input) {
+          input.value = crewCount;
+        }
+      }
+
       // 1. Tareas completadas
       const { data: doneData } = await client.from('completed_tasks').select('*').order('completed_at', { ascending: false });
 
@@ -258,7 +264,7 @@
         document.getElementById('tasksSummaryText').innerText = `${totalCompleted}/${totalTasksPossible} tareas completadas (${crewCount} tripulantes)`;
       }
 
-      // 2. Sesiones activas (Radar + Estado Impostor)
+      // 2. Sesiones
       const { data: sessions } = await client.from('active_sessions').select('*');
       renderRadarAndSessions(sessions || []);
 
@@ -288,7 +294,6 @@
       grid.innerHTML = '';
       const now = Date.now();
 
-      // Comprobar si el impostor está online
       const impSession = sessions.find(s => s.task_name === 'impostor_terminal');
       const badge = document.getElementById('impostorSessionBadge');
       if (impSession) {
@@ -305,7 +310,6 @@
         badge.style.color = '#94a3b8';
       }
 
-      // Radar de las 8 tareas
       ALL_TASKS.forEach(t => {
         const sess = sessions.find(s => s.task_name === t.id);
         let busy = false;
