@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Administración: Pasar DNI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Seguridad: Pasar DNI</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -13,289 +16,221 @@
       user-select: none;
     }
     body {
-      background: #090e13;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0.5rem;
+      padding: 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
-    }
-    h2 { margin: 0 0 0.2rem 0; color: #f43f5e; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.6rem 0; color: #94a3b8; font-size: 0.82rem; }
-
-    /* Mueble principal */
-    .terminal-case {
-      position: relative;
-      background: #242933;
-      border: 5px solid #15181e;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 360px;
-      height: 450px;
-      padding: 0.9rem;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.7);
-      overflow: hidden;
+      transition: transform 0.3s ease;
     }
 
-    /* Módulo superior: Datáfono */
-    .scanner-module {
-      position: relative;
-      background: #181d26;
-      border: 3px solid #0f1217;
-      border-radius: 12px;
-      padding: 0.7rem;
-      box-shadow: inset 0 3px 8px rgba(0,0,0,0.6);
-      z-index: 10;
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
     }
-    .scanner-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0b0e14;
-      padding: 0.4rem 0.8rem;
-      border-radius: 6px;
-      border: 1px solid #334155;
-      margin-bottom: 0.6rem;
-    }
-    .screen-text {
-      font-family: "Courier New", monospace;
+
+    /* Banners y Overlays de Emergencias */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
       font-size: 0.85rem;
       font-weight: 900;
-      color: #fb7185;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.2rem 0; color: #f43f5e; letter-spacing: 2px; }
+    p { margin: 0 0 0.4rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    #inversionNotice {
+      display: none;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #facc15;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px dashed #facc15;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 0.6rem;
       letter-spacing: 1px;
     }
-    .leds { display: flex; gap: 6px; }
-    .led {
-      width: 12px; height: 12px; border-radius: 50%;
-      background: #334155; border: 1px solid #000;
-    }
-    .led.green.on { background: #22c55e; box-shadow: 0 0 10px #22c55e; }
-    .led.red.on   { background: #ef4444; box-shadow: 0 0 10px #ef4444; }
 
-    /* Estructura de ranura con efecto inserción */
-    .slot-assembly {
+    /* Terminal de Lectura */
+    .scanner-terminal {
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 340px;
+      padding: 1.2rem 1rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    /* Pantallita LCD del escáner */
+    .scanner-lcd {
+      width: 100%;
+      background: #030712;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      padding: 0.6rem;
+      font-family: monospace;
+      font-size: 0.95rem;
+      font-weight: bold;
+      color: #38bdf8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .scanner-led {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .scanner-led.green {
+      background: #22c55e;
+      box-shadow: 0 0 10px #22c55e;
+    }
+
+    /* Ranura de lectura */
+    .swipe-track {
       position: relative;
-      height: 38px;
-      background: #05070a;
-      border-radius: 4px;
+      width: 100%;
+      height: 110px;
+      background: #0b1120;
+      border: 3px solid #334155;
+      border-radius: 14px;
       overflow: hidden;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.9);
       display: flex;
       align-items: center;
-      border-top: 3px solid #000;
     }
-    .slot-guideline {
+
+    .track-line {
       position: absolute;
-      left: 10px; right: 10px; height: 2px;
-      background: rgba(255,255,255,0.15);
+      top: 50%;
+      left: 10px;
+      right: 10px;
+      height: 4px;
+      background: #1e293b;
+      transform: translateY(-50%);
+      border-radius: 2px;
     }
-    .slot-arrow {
-      position: absolute; right: 12px;
-      color: rgba(255,255,255,0.25);
-      font-size: 0.85rem; font-weight: bold; pointer-events: none;
-    }
-    /* Labio frontal del lector que oculta la parte baja del DNI al pasar */
-    .slot-front-lip {
+
+    /* Tarjeta DNI */
+    .id-card {
       position: absolute;
-      bottom: 0; left: 0; right: 0; height: 18px;
-      background: linear-gradient(180deg, #1f2530 0%, #161a22 100%);
-      border-top: 2px solid #2d3748;
-      box-shadow: 0 -2px 6px rgba(0,0,0,0.7);
-      z-index: 25;
-      pointer-events: none;
-    }
-
-    /* Zona inferior: Cartera de piel */
-    .wallet-container {
-      position: relative;
-      background: #3e1704;
-      border: 4px solid #220b02;
-      border-radius: 14px 14px 6px 6px;
-      height: 200px;
-      box-shadow: inset 0 8px 18px rgba(0,0,0,0.85);
-      overflow: hidden;
-    }
-    .wallet-stitch {
-      position: absolute; inset: 4px;
-      border: 1px dashed rgba(245, 158, 11, 0.45);
-      border-radius: 10px; pointer-events: none;
-    }
-
-    /* --- Billete de 20€ realista --- */
-    .euro-20 {
-      position: absolute;
-      top: 15px; left: 16px;
-      width: 145px; height: 75px;
-      background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 35%, #93c5fd 65%, #2563eb 100%);
-      border: 1px solid #1d4ed8;
-      border-radius: 4px;
-      transform: rotate(-6deg);
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-      padding: 5px 6px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      overflow: hidden;
-      pointer-events: none;
-    }
-    .euro-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      color: #fff; font-size: 0.55rem; font-weight: 900;
-    }
-    .euro-flag {
-      width: 16px; height: 11px; background: #1e3a8a;
-      border: 0.5px solid #fff; border-radius: 1px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.45rem; color: #facc15;
-    }
-    .euro-arch {
-      position: absolute; top: 18px; left: 24px;
-      width: 44px; height: 38px;
-      border: 2px solid rgba(255,255,255,0.45);
-      border-radius: 20px 20px 0 0;
-    }
-    .euro-holo {
-      position: absolute; right: 8px; top: 0; bottom: 0; width: 14px;
-      background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 50%, #94a3b8 100%);
-      opacity: 0.75; border-left: 0.5px solid rgba(255,255,255,0.6);
-    }
-    .euro-val {
-      font-size: 1.15rem; font-weight: 900; color: #1e3a8a;
-      text-shadow: 1px 1px 0 rgba(255,255,255,0.5); line-height: 1;
-    }
-
-    /* --- Tarjeta de crédito bancaria realista --- */
-    .bank-card {
-      position: absolute;
-      top: 36px; right: 14px;
-      width: 135px; height: 85px;
-      background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-      border: 1px solid #475569;
-      border-radius: 6px;
-      transform: rotate(7deg);
-      box-shadow: 0 5px 12px rgba(0,0,0,0.6);
-      padding: 6px 8px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      pointer-events: none;
-    }
-    .card-top-row {
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .bank-chip {
-      width: 16px; height: 13px;
-      background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-      border: 0.5px solid #78350f; border-radius: 2px;
-    }
-    .contactless {
-      font-size: 0.65rem; color: #94a3b8; font-weight: bold;
-    }
-    .card-numbers {
-      font-family: "Courier New", monospace;
-      font-size: 0.55rem; color: #cbd5e1; letter-spacing: 1px;
-    }
-    .card-bottom-row {
-      display: flex; justify-content: space-between; align-items: center;
-    }
-    .cardholder {
-      font-size: 0.45rem; color: #94a3b8; text-transform: uppercase; font-weight: bold;
-    }
-    .mastercard-logo {
-      display: flex; position: relative; width: 22px; height: 13px;
-    }
-    .mc-circle-red {
-      width: 13px; height: 13px; border-radius: 50%;
-      background: #ef4444; position: absolute; left: 0;
-    }
-    .mc-circle-yellow {
-      width: 13px; height: 13px; border-radius: 50%;
-      background: #f59e0b; position: absolute; right: 0; opacity: 0.85;
-    }
-
-    /* Moneda 2€ */
-    .coin-2euro {
-      position: absolute; bottom: 12px; left: 16px;
-      width: 28px; height: 28px; border-radius: 50%;
-      background: radial-gradient(circle, #fde047 50%, #ca8a04 100%);
-      border: 3.5px solid #cbd5e1;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem; font-weight: 900; color: #713f12;
-      pointer-events: none;
-    }
-
-    /* Bolsillo frontal de la cartera */
-    .wallet-pocket {
-      position: absolute; bottom: 0; left: 0; right: 0; height: 105px;
-      background: linear-gradient(180deg, #301103 0%, #1e0901 100%);
-      border-top: 3px solid #582407;
-      box-shadow: 0 -4px 10px rgba(0,0,0,0.65);
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    /* --- El DNI interactivo --- */
-    #dniCard {
-      position: absolute;
-      width: 160px; height: 100px;
-      background: linear-gradient(135deg, #fef08a 0%, #bae6fd 60%, #e0f2fe 100%);
-      border: 2px solid #0284c7;
+      left: 10px;
+      width: 120px;
+      height: 75px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #0284c7 100%);
+      border: 2px solid #38bdf8;
       border-radius: 8px;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.7);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.7);
       cursor: grab;
-      z-index: 4; /* Dentro de la cartera al inicio */
       padding: 6px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      color: #0f172a;
+      text-align: left;
+      font-family: monospace;
+      z-index: 5;
     }
-    #dniCard:active { cursor: grabbing; }
-    #dniCard.pulled {
-      z-index: 20; /* Queda detrás del labio frontal (25) para meterse en la ranura */
+    .id-card:active {
+      cursor: grabbing;
     }
-
-    .dni-head {
-      display: flex; justify-content: space-between;
-      font-size: 0.48rem; font-weight: 900; color: #0369a1; letter-spacing: 0.5px;
+    .id-chip {
+      width: 18px;
+      height: 14px;
+      background: #fbbf24;
+      border-radius: 3px;
+      border: 1px solid #b45309;
     }
-    .dni-mid { display: flex; gap: 8px; align-items: center; }
-    .dni-mugshot {
-      width: 32px; height: 42px; background: #0284c7;
-      border-radius: 4px; display: flex; align-items: center; justify-content: center;
-      border: 1px solid #0369a1;
+    .id-text-top {
+      font-size: 0.55rem;
+      font-weight: 900;
+      color: #93c5fd;
+      letter-spacing: 1px;
     }
-    .dni-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-    .dni-chip-icon {
-      width: 14px; height: 11px; background: #f59e0b;
-      border: 1px solid #b45309; border-radius: 2px; margin-bottom: 2px;
-    }
-    .bar { height: 3px; background: rgba(15, 23, 42, 0.45); border-radius: 2px; }
-    .dni-magstrip {
-      height: 14px; background: #1e293b; border-radius: 2px;
+    .id-text-name {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #fff;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     #status {
-      margin-top: 0.8rem;
+      margin-top: 0.6rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       color: #22c55e;
-      min-height: 1.6rem;
-      letter-spacing: 1px;
+      min-height: 1.5rem;
     }
 
-    /* Capa de inicio y bloqueo */
     #overlay {
-      position: fixed; inset: 0; background: #090e13; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -318,7 +253,40 @@
 </head>
 <body>
 
-  <!-- Overlay -->
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Lector de seguridad bloqueado. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #f43f5e;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -334,90 +302,29 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>ADMINISTRACIÓN</h2>
-  <p>Saca el DNI de la cartera y pásalo por la ranura</p>
+  <h2>SEGURIDAD: PASAR DNI</h2>
+  <p id="subInstruction">Desliza la tarjeta a velocidad constante</p>
+  <div id="inversionNotice">🌀 CONTROLES INVERTIDOS: ARRASTRA HACIA ATRÁS</div>
 
-  <div class="terminal-case" id="terminalCase">
-
-    <!-- Datáfono superior -->
-    <div class="scanner-module" id="scannerMod">
-      <div class="scanner-top">
-        <span class="screen-text" id="screenMsg">SAQUE EL DNI</span>
-        <div class="leds">
-          <div class="led green" id="ledGreen"></div>
-          <div class="led red" id="ledRed"></div>
-        </div>
-      </div>
-      
-      <!-- Ranura con ranurado real -->
-      <div class="slot-assembly" id="slotAssembly">
-        <div class="slot-guideline"></div>
-        <span class="slot-arrow">▶▶▶</span>
-        <div class="slot-front-lip"></div>
-      </div>
+  <div class="scanner-terminal">
+    <div class="scanner-lcd">
+      <span id="lcdStatus">ESPERANDO TARJETA</span>
+      <div class="scanner-led" id="scannerLed"></div>
     </div>
 
-    <!-- Cartera realista -->
-    <div class="wallet-container" id="walletCont">
-      <div class="wallet-stitch"></div>
-
-      <!-- Billete de 20€ -->
-      <div class="euro-20">
-        <div class="euro-header">
-          <div class="euro-flag">★</div>
-          <span style="font-size: 0.5rem; letter-spacing: 0.5px;">BCE ECB EZB</span>
+    <div class="swipe-track" id="swipeTrack">
+      <div class="track-line"></div>
+      <div class="id-card" id="idCard">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="id-chip"></div>
+          <div class="id-text-top">CREW ID</div>
         </div>
-        <div class="euro-arch"></div>
-        <div class="euro-holo"></div>
-        <div class="euro-val">20</div>
-      </div>
-
-      <!-- Tarjeta bancaria -->
-      <div class="bank-card">
-        <div class="card-top-row">
-          <div class="bank-chip"></div>
-          <span class="contactless">))))</span>
-        </div>
-        <div class="card-numbers">•••• 8492</div>
-        <div class="card-bottom-row">
-          <span class="cardholder">CREW MEMBER</span>
-          <div class="mastercard-logo">
-            <div class="mc-circle-red"></div>
-            <div class="mc-circle-yellow"></div>
-          </div>
+        <div>
+          <div id="cardPlayerName" class="id-text-name">NOMBRE</div>
+          <div style="font-size:0.5rem; color:#94a3b8;">SECTOR 4 - ACCESS</div>
         </div>
       </div>
-
-      <!-- Moneda 2€ -->
-      <div class="coin-2euro">2€</div>
-
-      <!-- Bolsillo -->
-      <div class="wallet-pocket"></div>
     </div>
-
-    <!-- DNI -->
-    <div id="dniCard">
-      <div class="dni-head">
-        <span>ESPAÑA - DNI</span>
-        <span>TRIPULANTE</span>
-      </div>
-      <div class="dni-mid">
-        <div class="dni-mugshot">
-          <svg viewBox="0 0 40 40" width="22" height="22">
-            <ellipse cx="20" cy="22" rx="10" ry="14" fill="#38bdf8"/>
-            <ellipse cx="23" cy="18" rx="6" ry="4" fill="#bae6fd"/>
-          </svg>
-        </div>
-        <div class="dni-info">
-          <div class="dni-chip-icon"></div>
-          <div class="bar" style="width: 80%;"></div>
-          <div class="bar" style="width: 100%;"></div>
-          <div class="bar" style="width: 60%;"></div>
-        </div>
-      </div>
-      <div class="dni-magstrip"></div>
-    </div>
-
   </div>
 
   <div id="status"></div>
@@ -428,22 +335,40 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
+    let isTaskDone = false;
+    let isControlesActive = false;
+
+    // Control del arrastre
+    const track = document.getElementById('swipeTrack');
+    const card = document.getElementById('idCard');
+    const lcd = document.getElementById('lcdStatus');
+    const led = document.getElementById('scannerLed');
+
+    let isDragging = false;
+    let startPointerX = 0;
+    let startCardLeft = 10;
+    let swipeStartTime = 0;
+    let cardMaxX = 0;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -466,6 +391,8 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
+      document.getElementById('cardPlayerName').innerText = currentPlayer;
 
       const { data: doneData } = await client
         .from('completed_tasks')
@@ -499,7 +426,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -511,7 +438,11 @@
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      initCardInsideWallet();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      setupCardEvents();
     }
 
     async function takeSession() {
@@ -532,123 +463,128 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Sistema de física y ranura
-    const terminalCase = document.getElementById('terminalCase');
-    const dniCard = document.getElementById('dniCard');
-    const slotAssembly = document.getElementById('slotAssembly');
-    const screenMsg = document.getElementById('screenMsg');
-    const ledGreen = document.getElementById('ledGreen');
-    const ledRed = document.getElementById('ledRed');
-
-    let isDragging = false;
-    let isCompleted = false;
-    let isOut = false;
-
-    let swipeStartTime = 0;
-    let hasEnteredTrack = false;
-
-    function initCardInsideWallet() {
-      dniCard.classList.remove('pulled');
-      dniCard.style.left = '35px';
-      dniCard.style.top = '275px';
-      dniCard.style.transition = 'none';
-      isOut = false;
-      screenMsg.innerText = "SAQUE EL DNI";
-      screenMsg.style.color = "#fb7185";
-      ledGreen.classList.remove('on');
-      ledRed.classList.remove('on');
-    }
-
-    dniCard.addEventListener('pointerdown', (e) => {
-      if (isCompleted) return;
-      isDragging = true;
-      hasEnteredTrack = false;
-      swipeStartTime = 0;
-
-      dniCard.setPointerCapture(e.pointerId);
-      dniCard.style.transition = 'none';
-      playBeep(320, 'sine', 0.08);
-
-      moveCardToFinger(e.clientX, e.clientY);
-    });
-
-    function moveCardToFinger(clientX, clientY) {
-      const cRect = terminalCase.getBoundingClientRect();
-      const cardW = 160;
-      const cardH = 100;
-
-      // El dedo/cursor se mantiene centrado con precisión
-      let x = (clientX - cRect.left) - (cardW / 2);
-      let y = (clientY - cRect.top) - (cardH / 2);
-
-      dniCard.style.left = `${x}px`;
-      dniCard.style.top = `${y}px`;
-
-      // Sacar de la cartera
-      if (y < 235 && !isOut) {
-        isOut = true;
-        dniCard.classList.add('pulled');
-        screenMsg.innerText = "DESLICE EL DNI";
-        screenMsg.style.color = "#facc15";
-      }
-
-      // Comprobación de inserción en la ranura
-      const cardRect = dniCard.getBoundingClientRect();
-      const slotRect = slotAssembly.getBoundingClientRect();
-
-      // La base del DNI debe penetrar la ranura (entre su borde superior e inferior)
-      const isInsertedInSlot = (cardRect.bottom >= slotRect.top + 6) && (cardRect.bottom <= slotRect.bottom + 14);
-      const atStart = cardRect.left <= slotRect.left + 50;
-      const atEnd = cardRect.right >= slotRect.right - 20;
-
-      if (isOut && isInsertedInSlot && atStart && !hasEnteredTrack) {
-        hasEnteredTrack = true;
-        swipeStartTime = performance.now();
-        playBeep(480, 'square', 0.05);
-      }
-
-      if (hasEnteredTrack && atEnd) {
-        finishSwipe();
-      }
-    }
-
-    window.addEventListener('pointermove', (e) => {
-      if (!isDragging || isCompleted) return;
-      moveCardToFinger(e.clientX, e.clientY);
-    });
-
-    window.addEventListener('pointerup', () => {
-      if (!isDragging || isCompleted) return;
-      isDragging = false;
-
-      dniCard.style.transition = 'left 0.3s ease, top 0.3s ease';
-      initCardInsideWallet();
-
-      if (hasEnteredTrack) {
-        showError("LECTURA INCOMPLETA");
-      }
-    });
-
-    async function finishSwipe() {
-      isDragging = false;
-      const duration = performance.now() - swipeStartTime;
-
-      if (duration < 330) {
-        showError("DEMASIADO RÁPIDO");
-        reboundToWallet();
-      } else if (duration > 1200) {
-        showError("DEMASIADO LENTO");
-        reboundToWallet();
+    async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
       } else {
-        isCompleted = true;
-        screenMsg.innerText = "ACEPTADO";
-        screenMsg.style.color = "#22c55e";
-        ledGreen.classList.add('on');
-        ledRed.classList.remove('on');
+        meetEl.style.display = 'none';
+      }
 
-        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
-        playBeep(750, 'sine', 0.18);
-        setTimeout(() => playBeep(1000, 'sine', 0.3), 150);
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
+
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
+
+      // 1. Luces
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
+
+      // 2. Fuga de gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
+
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
+      }
+
+      // 3. Controles Invertidos
+      const notice = document.getElementById('inversionNotice');
+      if (sabControles && sabControles.active) {
+        isControlesActive = true;
+        document.body.classList.add('inverted-controls');
+        notice.style.display = 'inline-block';
+      } else {
+        isControlesActive = false;
+        document.body.classList.remove('inverted-controls');
+        notice.style.display = 'none';
+      }
+    }
+
+    function setupCardEvents() {
+      cardMaxX = track.clientWidth - card.clientWidth - 10;
+
+      card.addEventListener('pointerdown', (e) => {
+        if (isTaskDone) return;
+        isDragging = true;
+        card.setPointerCapture(e.pointerId);
+        startPointerX = e.clientX;
+        startCardLeft = parseInt(card.style.left || '10', 10);
+        swipeStartTime = Date.now();
+        lcd.innerText = 'LEYENDO...';
+        lcd.style.color = '#fbbf24';
+        playBeep(320, 'sine', 0.05);
+      });
+
+      card.addEventListener('pointermove', (e) => {
+        if (!isDragging) return;
+        const deltaX = e.clientX - startPointerX;
+
+        // INVERSIÓN: Si está activo el sabotaje, arrastrar hacia la izquierda mueve la tarjeta hacia la derecha
+        const effectiveDelta = isControlesActive ? -deltaX : deltaX;
+        let newX = startCardLeft + effectiveDelta;
+
+        if (newX < 10) newX = 10;
+        if (newX > cardMaxX) newX = cardMaxX;
+
+        card.style.left = `${newX}px`;
+      });
+
+      function onPointerEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        try { card.releasePointerCapture(e.pointerId); } catch (_) {}
+
+        const currentLeft = parseInt(card.style.left || '10', 10);
+        const swipeDuration = (Date.now() - swipeStartTime) / 1000;
+
+        // Verificar si llegó hasta el final del lector
+        if (currentLeft >= cardMaxX - 10) {
+          evaluateSwipe(swipeDuration);
+        } else {
+          // No completó el recorrido
+          resetCard('LECTURA INCOMPLETA');
+        }
+      }
+
+      card.addEventListener('pointerup', onPointerEnd);
+      card.addEventListener('pointercancel', onPointerEnd);
+    }
+
+    async function evaluateSwipe(duration) {
+      // Ventana de velocidad: más estricta si hay sabotaje
+      const minTime = isControlesActive ? 0.55 : 0.40;
+      const maxTime = isControlesActive ? 0.78 : 0.95;
+
+      if (duration < minTime) {
+        playBeep(140, 'sawtooth', 0.3);
+        if (navigator.vibrate) navigator.vibrate(200);
+        resetCard('MUY RÁPIDO');
+      } else if (duration > maxTime) {
+        playBeep(140, 'sawtooth', 0.3);
+        if (navigator.vibrate) navigator.vibrate(200);
+        resetCard('MUY LENTO');
+      } else {
+        // ¡Éxito!
+        isTaskDone = true;
+        lcd.innerText = 'DNI ACEPTADO';
+        lcd.style.color = '#22c55e';
+        led.classList.add('green');
+        document.getElementById('status').innerText = '¡ACCESO CONCEDIDO!';
+        playBeep(880, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
         await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
@@ -656,26 +592,16 @@
       }
     }
 
-    function showError(msg) {
-      screenMsg.innerText = msg;
-      screenMsg.style.color = "#ef4444";
-      ledRed.classList.add('on');
-      ledGreen.classList.remove('on');
-      playBeep(180, 'sawtooth', 0.25);
-      if (navigator.vibrate) navigator.vibrate(200);
-
+    function resetCard(msg) {
+      lcd.innerText = msg;
+      lcd.style.color = '#ef4444';
+      card.style.transition = 'left 0.25s ease';
+      card.style.left = '10px';
       setTimeout(() => {
-        if (!isCompleted) {
-          screenMsg.innerText = isOut ? "DESLICE EL DNI" : "SAQUE EL DNI";
-          screenMsg.style.color = isOut ? "#facc15" : "#fb7185";
-          ledRed.classList.remove('on');
-        }
-      }, 1300);
-    }
-
-    function reboundToWallet() {
-      dniCard.style.transition = 'left 0.35s ease, top 0.35s ease';
-      initCardInsideWallet();
+        card.style.transition = 'none';
+        lcd.innerText = 'PASE DE NUEVO';
+        lcd.style.color = '#38bdf8';
+      }, 700);
     }
   </script>
 </body>
