@@ -2,18 +2,23 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
   <title>Electricidad: Cables</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    * {
+      box-sizing: border-box;
+      touch-action: none; /* Bloquea cualquier scroll nativo para que el dedo no tire de la pantalla */
+      -webkit-user-select: none;
+      user-select: none;
+    }
     body {
-      background: #0f1117;
+      background: #0a0d14;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem 0.8rem;
+      padding: 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -86,66 +91,149 @@
     }
 
     h2 { margin: 0 0 0.2rem 0; color: #f59e0b; letter-spacing: 2px; }
-    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
 
+    /* Armario eléctrico industrial */
     .panel {
       position: relative;
       background: #1e2430;
       border: 4px solid #334155;
-      border-radius: 16px;
+      border-radius: 18px;
       width: 100%;
       max-width: 360px;
-      height: 380px;
+      height: 390px;
       display: flex;
       justify-content: space-between;
-      padding: 1rem 0.5rem;
-      box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
+      padding: 1.2rem 0.6rem;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 12px 28px rgba(0,0,0,0.6);
+      /* Remaches en las esquinas */
+      background-image: 
+        radial-gradient(#475569 2px, transparent 2px),
+        radial-gradient(#475569 2px, transparent 2px);
+      background-position: 8px 8px, calc(100% - 8px) calc(100% - 8px);
+      background-size: 10px 10px;
+      background-repeat: no-repeat;
     }
+
     .side {
       display: flex;
       flex-direction: column;
       justify-content: space-around;
-      width: 70px;
+      width: 80px;
       z-index: 2;
     }
-    .node {
+
+    /* Clavija / Terminal del cable */
+    .terminal-port {
+      display: flex;
+      align-items: center;
+      height: 48px;
+      position: relative;
+    }
+
+    .terminal-port.left {
+      justify-content: flex-start;
+    }
+    .terminal-port.right {
+      justify-content: flex-end;
+    }
+
+    /* Base metálica empotrada en la pared */
+    .base-mount {
+      width: 22px;
       height: 38px;
-      border-radius: 6px;
+      background: linear-gradient(180deg, #475569 0%, #1e293b 100%);
+      border: 2px solid #0f172a;
+      border-radius: 4px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 0.8rem;
-      cursor: pointer;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      border: 2px solid rgba(255,255,255,0.2);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.2), 0 2px 4px rgba(0,0,0,0.5);
     }
-    .node-red { background: #ef4444; }
-    .node-blue { background: #3b82f6; }
-    .node-yellow { background: #eab308; color: #000; }
-    .node-pink { background: #ec4899; }
+
+    /* Trozo de cable cortado que sobresale */
+    .wire-stub {
+      width: 36px;
+      height: 20px;
+      border-radius: 4px 10px 10px 4px;
+      position: relative;
+      cursor: pointer;
+      box-shadow: inset 0 3px 2px rgba(255,255,255,0.3), 0 3px 6px rgba(0,0,0,0.6);
+    }
+
+    .terminal-port.right .wire-stub {
+      border-radius: 10px 4px 4px 10px;
+    }
+
+    /* Núcleo de cobre expuesto en la punta */
+    .copper-tip {
+      position: absolute;
+      top: 5px;
+      width: 5px;
+      height: 10px;
+      background: #f97316;
+      border-radius: 2px;
+      box-shadow: 0 0 4px #fdba74;
+    }
+    .terminal-port.left .copper-tip { right: -4px; }
+    .terminal-port.right .copper-tip { left: -4px; }
+
+    /* Colores oficiales de Among Us con gradientes para volumen de cable */
+    .wire-red {
+      background: linear-gradient(180deg, #f87171 0%, #ef4444 40%, #b91c1c 100%);
+      border: 2px solid #7f1d1d;
+    }
+    .wire-blue {
+      background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 40%, #1d4ed8 100%);
+      border: 2px solid #1e3a8a;
+    }
+    .wire-yellow {
+      background: linear-gradient(180deg, #fde047 0%, #eab308 40%, #a16207 100%);
+      border: 2px solid #713f12;
+    }
+    .wire-pink {
+      background: linear-gradient(180deg, #f472b6 0%, #ec4899 40%, #be185d 100%);
+      border: 2px solid #831843;
+    }
 
     svg {
       position: absolute;
       top: 0; left: 0;
       width: 100%; height: 100%;
-      z-index: 1; pointer-events: none;
+      z-index: 1;
+      pointer-events: none;
     }
-    line {
-      stroke-width: 8;
+
+    /* Estilo de cable grueso con relieve y sombra */
+    .cable-shadow {
+      stroke: rgba(0, 0, 0, 0.45);
+      stroke-width: 18;
       stroke-linecap: round;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+      fill: none;
     }
+    .cable-body {
+      stroke-width: 14;
+      stroke-linecap: round;
+      fill: none;
+      filter: drop-shadow(0 3px 2px rgba(0,0,0,0.5));
+    }
+    .cable-highlight {
+      stroke: rgba(255, 255, 255, 0.35);
+      stroke-width: 3;
+      stroke-linecap: round;
+      fill: none;
+    }
+
     #status {
-      margin-top: 1rem;
+      margin-top: 0.8rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       color: #22c55e;
       min-height: 1.5rem;
     }
 
     #overlay {
-      position: fixed; inset: 0; background: #0f1117; z-index: 50;
+      position: fixed; inset: 0; background: #0a0d14; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -213,7 +301,7 @@
   </div>
 
   <h2>CABLES</h2>
-  <p>Conecta los cables del mismo color</p>
+  <p>Une los cables cortados con su color correspondiente</p>
 
   <div class="panel" id="panel">
     <svg id="svg"></svg>
@@ -233,17 +321,21 @@
     let heartbeatTimer = null;
 
     const COLORS = [
-      { id: 'red', hex: '#ef4444', class: 'node-red' },
-      { id: 'blue', hex: '#3b82f6', class: 'node-blue' },
-      { id: 'yellow', hex: '#eab308', class: 'node-yellow' },
-      { id: 'pink', hex: '#ec4899', class: 'node-pink' }
+      { id: 'red', hex: '#ef4444', class: 'wire-red' },
+      { id: 'blue', hex: '#3b82f6', class: 'wire-blue' },
+      { id: 'yellow', hex: '#eab308', class: 'wire-yellow' },
+      { id: 'pink', hex: '#ec4899', class: 'wire-pink' }
     ];
 
-    let selectedNode = null;
     let completed = {};
     const svg = document.getElementById('svg');
     const panel = document.getElementById('panel');
-    let tempLine = null;
+
+    // Estado del arrastre ultra-optimizado
+    let draggingColor = null;
+    let startPoint = { x: 0, y: 0 };
+    let tempGroup = null;
+    let rightTargets = []; // Caché de posiciones para evitar calcularlas en cada frame táctil
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 440, type = 'sine', duration = 0.1) {
@@ -351,7 +443,6 @@
     window.addEventListener('pagehide', releaseSession);
 
     async function checkSabotages() {
-      // 0. Comprobar si hay reunión activa y bloquear la tarea
       const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
       const meetEl = document.getElementById('meetingTaskOverlay');
       if (meeting && meeting.active) {
@@ -369,15 +460,8 @@
       const sabFuga = sabs.find(s => s.id === 'fuga');
       const sabControles = sabs.find(s => s.id === 'controles');
 
-      // 1. Luces
-      const blackoutEl = document.getElementById('lightsBlackout');
-      if (sabLuces && sabLuces.active) {
-        blackoutEl.style.display = 'flex';
-      } else {
-        blackoutEl.style.display = 'none';
-      }
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
-      // 2. Fuga de gas
       const gasBanner = document.getElementById('gasAlertBanner');
       const gasTimerSpan = document.getElementById('gasTimerSpan');
       const defeatEl = document.getElementById('defeatOverlay');
@@ -393,7 +477,6 @@
         defeatEl.style.display = 'none';
       }
 
-      // 3. Controles
       if (sabControles && sabControles.active) {
         document.body.classList.add('inverted-controls');
       } else {
@@ -413,81 +496,162 @@
       const rightSide = document.getElementById('rightSide');
       leftSide.innerHTML = '';
       rightSide.innerHTML = '';
+      svg.innerHTML = '';
+      completed = {};
 
       leftColors.forEach(c => {
-        const div = document.createElement('div');
-        div.className = `node ${c.class}`;
-        div.dataset.color = c.id;
-        div.dataset.side = 'left';
-        leftSide.appendChild(div);
+        const port = document.createElement('div');
+        port.className = 'terminal-port left';
+        port.innerHTML = `
+          <div class="base-mount"></div>
+          <div class="wire-stub ${c.class}" data-color="${c.id}" data-side="left">
+            <div class="copper-tip"></div>
+          </div>
+        `;
+        leftSide.appendChild(port);
       });
 
       rightColors.forEach(c => {
-        const div = document.createElement('div');
-        div.className = `node ${c.class}`;
-        div.dataset.color = c.id;
-        div.dataset.side = 'right';
-        rightSide.appendChild(div);
+        const port = document.createElement('div');
+        port.className = 'terminal-port right';
+        port.innerHTML = `
+          <div class="wire-stub ${c.class}" data-color="${c.id}" data-side="right">
+            <div class="copper-tip"></div>
+          </div>
+          <div class="base-mount"></div>
+        `;
+        rightSide.appendChild(port);
       });
 
-      setupEvents();
+      // Cachear posiciones de destino tras renderizar
+      requestAnimationFrame(cacheTargetPositions);
+      setupOptimizedTouchEvents();
     }
 
-    function setupEvents() {
+    function cacheTargetPositions() {
+      rightTargets = [];
+      const pRect = panel.getBoundingClientRect();
+      const rightStubs = document.querySelectorAll('.wire-stub[data-side="right"]');
+      rightStubs.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        rightTargets.push({
+          color: el.dataset.color,
+          element: el,
+          x: rect.left - pRect.left + 5, // Punto de inserción en el extremo
+          y: rect.top - pRect.top + rect.height / 2,
+          radius: 35 // Radio amplio de captura para no tener que atinar al milímetro
+        });
+      });
+    }
+
+    // Crea un grupo SVG con sombreado de cable real
+    function createCableGraphic(x1, y1, x2, y2, hex) {
+      const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      const shadow = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      shadow.setAttribute('class', 'cable-shadow');
+      shadow.setAttribute('x1', x1); shadow.setAttribute('y1', y1 + 3);
+      shadow.setAttribute('x2', x2); shadow.setAttribute('y2', y2 + 3);
+
+      const body = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      body.setAttribute('class', 'cable-body');
+      body.setAttribute('stroke', hex);
+      body.setAttribute('x1', x1); body.setAttribute('y1', y1);
+      body.setAttribute('x2', x2); body.setAttribute('y2', y2);
+
+      const highlight = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      highlight.setAttribute('class', 'cable-highlight');
+      highlight.setAttribute('x1', x1); highlight.setAttribute('y1', y1 - 2);
+      highlight.setAttribute('x2', x2); highlight.setAttribute('y2', y2 - 2);
+
+      g.appendChild(shadow);
+      g.appendChild(body);
+      g.appendChild(highlight);
+      return g;
+    }
+
+    function updateCableGraphic(g, x2, y2) {
+      const lines = g.querySelectorAll('line');
+      // Shadow
+      lines[0].setAttribute('x2', x2); lines[0].setAttribute('y2', y2 + 3);
+      // Body
+      lines[1].setAttribute('x2', x2); lines[1].setAttribute('y2', y2);
+      // Highlight
+      lines[2].setAttribute('x2', x2); lines[2].setAttribute('y2', y2 - 2);
+    }
+
+    function setupOptimizedTouchEvents() {
       panel.addEventListener('pointerdown', (e) => {
-        const node = e.target.closest('.node');
-        if (!node || node.dataset.side !== 'left') return;
-        if (completed[node.dataset.color]) return;
+        const stub = e.target.closest('.wire-stub[data-side="left"]');
+        if (!stub) return;
+        const color = stub.dataset.color;
+        if (completed[color]) return;
 
-        selectedNode = node;
+        draggingColor = color;
+        panel.setPointerCapture(e.pointerId);
+
         const pRect = panel.getBoundingClientRect();
-        const nRect = node.getBoundingClientRect();
+        const sRect = stub.getBoundingClientRect();
 
-        const x1 = nRect.right - pRect.left;
-        const y1 = nRect.top + nRect.height / 2 - pRect.top;
+        // El cable nace exactamente en la punta de cobre izquierda
+        startPoint = {
+          x: sRect.right - pRect.left,
+          y: sRect.top - pRect.top + sRect.height / 2
+        };
 
-        tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-        tempLine.setAttribute('x1', x1);
-        tempLine.setAttribute('y1', y1);
-        tempLine.setAttribute('x2', x1);
-        tempLine.setAttribute('y2', y1);
-        const col = COLORS.find(c => c.id === node.dataset.color);
-        tempLine.setAttribute('stroke', col.hex);
-        svg.appendChild(tempLine);
+        const col = COLORS.find(c => c.id === color);
+        tempGroup = createCableGraphic(startPoint.x, startPoint.y, startPoint.x, startPoint.y, col.hex);
+        svg.appendChild(tempGroup);
+        playBeep(320, 'sine', 0.05);
       });
 
-      window.addEventListener('pointermove', (e) => {
-        if (!selectedNode || !tempLine) return;
+      panel.addEventListener('pointermove', (e) => {
+        if (!draggingColor || !tempGroup) return;
+
         const pRect = panel.getBoundingClientRect();
-        tempLine.setAttribute('x2', e.clientX - pRect.left);
-        tempLine.setAttribute('y2', e.clientY - pRect.top);
+        const currentX = e.clientX - pRect.left;
+        const currentY = e.clientY - pRect.top;
+
+        updateCableGraphic(tempGroup, currentX, currentY);
       });
 
-      window.addEventListener('pointerup', (e) => {
-        if (!selectedNode || !tempLine) return;
+      function endDrag(e) {
+        if (!draggingColor) return;
 
-        const target = document.elementFromPoint(e.clientX, e.clientY)?.closest('.node');
+        const pRect = panel.getBoundingClientRect();
+        const releaseX = e.clientX - pRect.left;
+        const releaseY = e.clientY - pRect.top;
 
-        if (target && target.dataset.side === 'right' && target.dataset.color === selectedNode.dataset.color) {
-          const pRect = panel.getBoundingClientRect();
-          const tRect = target.getBoundingClientRect();
-          tempLine.setAttribute('x2', tRect.left - pRect.left);
-          tempLine.setAttribute('y2', tRect.top + tRect.height / 2 - pRect.top);
-          completed[selectedNode.dataset.color] = true;
-          playBeep(520, 'sine', 0.1);
+        // Comprobación de colisión por distancia matemática (instantánea y sin lag)
+        const matchedTarget = rightTargets.find(t => {
+          const dist = Math.hypot(releaseX - t.x, releaseY - t.y);
+          return dist <= t.radius && t.color === draggingColor;
+        });
+
+        if (matchedTarget) {
+          // Encajar con precisión milimétrica en la clavija derecha
+          updateCableGraphic(tempGroup, matchedTarget.x, matchedTarget.y);
+          completed[draggingColor] = true;
+          playBeep(580, 'sine', 0.12);
+          if (navigator.vibrate) navigator.vibrate(40);
           checkWin();
         } else {
-          tempLine.remove();
+          // Fallo: eliminar cable
+          tempGroup.remove();
         }
 
-        selectedNode = null;
-        tempLine = null;
-      });
+        draggingColor = null;
+        tempGroup = null;
+        try { panel.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
+
+      panel.addEventListener('pointerup', endDrag);
+      panel.addEventListener('pointercancel', endDrag);
     }
 
     async function checkWin() {
       if (Object.keys(completed).length === COLORS.length) {
-        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+        document.getElementById('status').innerText = '¡CABLES CONECTADOS!';
         playBeep(880, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
@@ -495,6 +659,8 @@
         await releaseSession();
       }
     }
+
+    window.addEventListener('resize', cacheTargetPositions);
   </script>
 </body>
 </html>
