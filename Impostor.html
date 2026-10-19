@@ -30,7 +30,25 @@
       gap: 1rem;
     }
 
-    /* Overlay inicio/bloqueo */
+    /* Pantalla completa de Victoria del Impostor */
+    #victoryOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #7f1d1d 0%, #200408 85%);
+      z-index: 150;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+      animation: victoryPulse 1.2s infinite alternate;
+    }
+    @keyframes victoryPulse {
+      from { box-shadow: inset 0 0 40px #ef4444; }
+      to { box-shadow: inset 0 0 100px #b91c1c; }
+    }
+
     #overlay {
       position: fixed; inset: 0; background: #090305; z-index: 100;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
@@ -52,7 +70,6 @@
       padding: 1rem; margin: 1rem; max-width: 300px; display: none;
     }
 
-    /* Tarjetas */
     .card {
       background: #18090d;
       border: 2px solid #3f1118;
@@ -194,6 +211,15 @@
 </head>
 <body>
 
+  <!-- Pantalla de Victoria del Impostor -->
+  <div id="victoryOverlay">
+    <div style="font-size: 4rem; margin-bottom: 0.5rem;">👑☠️</div>
+    <h1 style="font-size: 2.2rem; color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡VICTORIA DEL IMPOSTOR!</h1>
+    <p style="color: #fecaca; font-size: 1.1rem; max-width: 300px; margin: 0;">
+      La tripulación no selló la fuga de gas a tiempo. La nave ha quedado completamente intoxicada.
+    </p>
+  </div>
+
   <div id="overlay">
     <h2 id="ovTitle" style="color: #ef4444; margin-bottom: 0.3rem;">TERMINAL DEL IMPOSTOR</h2>
     <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y configuración de la partida</p>
@@ -323,10 +349,8 @@
       currentPlayer = name;
       totalCrewCount = count;
 
-      // 1. Guardar en Supabase para sincronizar con admin
       await client.from('game_settings').upsert({ id: 'global', crew_count: totalCrewCount, updated_at: new Date().toISOString() });
 
-      // 2. Control de ocupación
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -356,8 +380,8 @@
       heartbeatTimer = setInterval(takeSession, 3000);
 
       pollData();
-      setInterval(pollData, 2500);
-      setInterval(updateCooldownUI, 1000);
+      setInterval(pollData, 1500);
+      setInterval(updateCooldownUI, 500);
     }
 
     async function takeSession() {
@@ -385,13 +409,11 @@
     }
 
     async function pollData() {
-      // 0. Sincronizar número de tripulantes por si el admin lo cambió
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
       if (settings && settings.crew_count) {
         totalCrewCount = settings.crew_count;
       }
 
-      // 1. Sabotajes
       const { data: sabs } = await client.from('sabotages').select('*');
       if (sabs) {
         sabs.forEach(s => {
@@ -403,7 +425,6 @@
         });
       }
 
-      // 2. Progreso global
       const { data: doneTasks } = await client.from('completed_tasks').select('*');
       if (doneTasks) {
         const totalMaxTasks = totalCrewCount * ALL_TASKS.length;
@@ -417,7 +438,6 @@
         renderTaskBreakdown(doneTasks);
       }
 
-      // 3. Radar
       const { data: sessions } = await client.from('active_sessions').select('*');
       renderRadar(sessions || []);
     }
@@ -454,8 +474,53 @@
       }
 
       updateSingleButton('luces', 'btnLuces', 'badgeLuces', anyActive, now);
-      updateSingleButton('fuga', 'btnFuga', 'badgeFuga', anyActive, now);
+      updateFugaButton(anyActive, now);
       updateSingleButton('controles', 'btnControles', 'badgeControles', anyActive, now);
+    }
+
+    function updateFugaButton(anyActive, now) {
+      const btn = document.getElementById('btnFuga');
+      const badge = document.getElementById('badgeFuga');
+      const info = currentSabotages['fuga'];
+      const victoryEl = document.getElementById('victoryOverlay');
+
+      if (info && info.active) {
+        btn.classList.add('active-now');
+        btn.disabled = false;
+
+        const elapsed = Math.floor((now - new Date(info.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+
+        badge.innerText = `⏳ ${remaining}s`;
+
+        if (remaining === 0) {
+          victoryEl.style.display = 'flex';
+        } else {
+          victoryEl.style.display = 'none';
+        }
+        return;
+      }
+
+      victoryEl.style.display = 'none';
+      btn.classList.remove('active-now');
+
+      if (anyActive) {
+        btn.disabled = true;
+        badge.innerText = 'BLOQUEADO';
+        return;
+      }
+
+      const elapsed = Math.floor((now - lastFinishedTime['fuga']) / 1000);
+      const remaining = COOLDOWNS['fuga'] - elapsed;
+
+      if (lastFinishedTime['fuga'] > 0 && remaining > 0) {
+        btn.disabled = true;
+        badge.innerText = `${remaining}s`;
+        return;
+      }
+
+      btn.disabled = false;
+      badge.innerText = 'LISTO';
     }
 
     function updateSingleButton(sabId, btnId, badgeId, anyActive, now) {
@@ -497,7 +562,7 @@
 
       const labels = {
         luces: 'APAGAR LUCES',
-        fuga: 'FUGA DE GAS (CRÍTICO)',
+        fuga: 'FUGA DE GAS (CRÍTICO 45s)',
         controles: 'INVERTIR CONTROLES'
       };
 
