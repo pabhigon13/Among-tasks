@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Almacén: Suministros en Cascada</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Cafetería: Cascada</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -13,120 +16,161 @@
       user-select: none;
     }
     body {
-      background: #0d0606;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0.8rem;
+      padding: 0.6rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
-    }
-    h2 { margin: 0 0 0.2rem 0; color: #ff2a2a; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
-
-    /* Marco del juego */
-    .game-cabinet {
-      position: relative;
-      background: #170909;
-      border: 4px solid #7f1d1d;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 360px;
-      height: 460px;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      transition: transform 0.3s ease;
     }
 
-    /* Barra de progreso superior */
-    .progress-bar-container {
-      background: #2b0b0b;
-      border-bottom: 2px solid #450a0a;
-      padding: 0.6rem 0.8rem;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      z-index: 5;
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
     }
-    .progress-header {
-      display: flex;
-      justify-content: space-between;
+
+    /* Banners y Overlays de Emergencias */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 900;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.15rem 0; color: #ff2a2a; letter-spacing: 2px; }
+    p { margin: 0 0 0.4rem 0; color: #94a3b8; font-size: 0.82rem; }
+
+    #inversionNotice {
+      display: none;
       font-size: 0.75rem;
-      font-weight: bold;
-      color: #fca5a5;
+      font-weight: 900;
+      color: #facc15;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px dashed #facc15;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 0.4rem;
       letter-spacing: 1px;
     }
-    .progress-track {
+
+    /* Contenedor del Juego */
+    .game-wrapper {
+      position: relative;
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 340px;
+      padding: 0.8rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    /* Barra Superior de Progreso */
+    .progress-bar-track {
       width: 100%;
       height: 14px;
-      background: #0f0303;
+      background: #030712;
       border-radius: 7px;
-      border: 1px solid #450a0a;
+      border: 1px solid #334155;
       overflow: hidden;
-      position: relative;
+      display: flex;
     }
-    .progress-fill {
-      height: 100%;
+    .progress-bar-fill {
       width: 0%;
-      background: linear-gradient(90deg, #dc2626, #ff2a2a);
-      box-shadow: 0 0 10px #ff2a2a;
+      height: 100%;
+      background: linear-gradient(90deg, #f59e0b, #22c55e);
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.6);
       transition: width 0.15s ease-out;
     }
 
-    /* Lienzo donde caen los objetos */
-    .game-area {
+    /* Pantalla de Caída */
+    .canvas-container {
       position: relative;
-      flex: 1;
+      width: 300px;
+      height: 340px;
+      background: #090e1a;
+      border: 3px solid #334155;
+      border-radius: 12px;
       overflow: hidden;
-      background: radial-gradient(circle at center, #1c0a0a 0%, #0d0404 100%);
     }
 
-    /* Cesta controlable */
-    #basket {
-      position: absolute;
-      bottom: 12px;
-      left: 50%;
-      width: 76px;
-      height: 48px;
-      transform: translateX(-50%);
-      z-index: 10;
-      pointer-events: none;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.7));
-    }
-
-    /* Objetos limpios sin texto */
-    .falling-item {
-      position: absolute;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
-      z-index: 4;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
     }
 
     #status {
-      margin-top: 0.8rem;
+      margin-top: 0.5rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #22c55e;
-      min-height: 1.6rem;
-      letter-spacing: 1px;
+      min-height: 1.4rem;
     }
 
-    /* Capa de inicio y bloqueo */
     #overlay {
-      position: fixed; inset: 0; background: #0d0606; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -134,7 +178,7 @@
       color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #dc2626; color: #fff;
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ff2a2a; color: #fff;
       border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     .btn-retry {
@@ -149,7 +193,40 @@
 </head>
 <body>
 
-  <!-- Overlay -->
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Cascada pausada. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #ff2a2a;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -165,34 +242,17 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>CASCADA</h2>
-  <p>Recoge el alcohol y evita los otros objetos</p>
+  <h2>CAFETERÍA: CASCADA</h2>
+  <p>Recoge las bebidas alcohólicas y esquiva los objetos cotidianos</p>
+  <div id="inversionNotice">🌀 CONTROLES INVERTIDOS: MOVIMIENTO OPUESTO</div>
 
-  <div class="game-cabinet">
-    <!-- Barra de progreso -->
-    <div class="progress-bar-container">
-      <div class="progress-header">
-        <span>PROVISIONES</span>
-        <span id="percentLabel">0%</span>
-      </div>
-      <div class="progress-track">
-        <div class="progress-fill" id="progressBar"></div>
-      </div>
+  <div class="game-wrapper">
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressBar"></div>
     </div>
 
-    <!-- Zona interactiva -->
-    <div class="game-area" id="gameArea">
-      <!-- Cesta en tono rojo oscuro -->
-      <div id="basket">
-        <svg viewBox="0 0 100 60" width="100%" height="100%">
-          <path d="M 10 15 L 20 55 L 80 55 L 90 15 Z" fill="#991b1b" stroke="#f87171" stroke-width="3" />
-          <line x1="20" y1="15" x2="30" y2="55" stroke="#450a0a" stroke-width="2" />
-          <line x1="50" y1="15" x2="50" y2="55" stroke="#450a0a" stroke-width="2" />
-          <line x1="80" y1="15" x2="70" y2="55" stroke="#450a0a" stroke-width="2" />
-          <line x1="12" y1="35" x2="88" y2="35" stroke="#450a0a" stroke-width="2" />
-          <ellipse cx="50" cy="15" rx="40" ry="7" fill="#b91c1c" stroke="#f87171" stroke-width="3" />
-        </svg>
-      </div>
+    <div class="canvas-container" id="canvasBox">
+      <canvas id="gameCanvas" width="300" height="340"></canvas>
     </div>
   </div>
 
@@ -204,44 +264,53 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
 
-    // Catálogo de objetos solo con emojis
-    const ITEMS = [
-      // BUENOS (Alcohol: Jäger/botella, copa, vaso con hielo, copa de vino)
-      { type: 'good', icon: '🍾' },
-      { type: 'good', icon: '🥃' },
-      { type: 'good', icon: '🍸' },
-      { type: 'good', icon: '🍷' },
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
 
-      // MALOS (Chatarra: móvil, mando, pila, bombilla, herramienta)
-      { type: 'bad', icon: '📱' },
-      { type: 'bad', icon: '🎮' },
-      { type: 'bad', icon: '🔋' },
-      { type: 'bad', icon: '💡' },
-      { type: 'bad', icon: '🔧' }
-    ];
+    // Catálogo de objetos
+    const GOOD_ITEMS = ['🍺', '🍷', '🥂', '🍹', '🍻'];
+    const BAD_ITEMS = ['🎮', '🔋', '📱', '🔧', '👢'];
 
-    let progress = 0;
-    let isGameOver = false;
-    let fallingObjects = [];
-    let spawnTimer = null;
-    let animFrame = null;
+    let progress = 0; // De 0 a 100%
+    const TARGET_PROGRESS = 100;
+    let isTaskDone = false;
+    let isPausedByMeeting = false;
+    let isControlesActive = false;
+
+    // Cesta del jugador
+    const basket = {
+      width: 58,
+      height: 28,
+      x: 150 - 29,
+      y: 300,
+      icon: '🧺'
+    };
+
+    let items = [];
+    let spawnTimer = 0;
+    let isTouching = false;
+    let lastTouchX = 150;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.12) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -264,6 +333,7 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
 
       const { data: doneData } = await client
         .from('completed_tasks')
@@ -297,7 +367,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -309,7 +379,12 @@
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      startGame();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      setupTouchControls();
+      requestAnimationFrame(gameLoop);
     }
 
     async function takeSession() {
@@ -330,114 +405,227 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Motor del juego
-    const gameArea = document.getElementById('gameArea');
-    const basket = document.getElementById('basket');
-    const progressBar = document.getElementById('progressBar');
-    const percentLabel = document.getElementById('percentLabel');
+    async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        isPausedByMeeting = true;
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        isPausedByMeeting = false;
+        meetEl.style.display = 'none';
+      }
 
-    let basketX = 180;
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-    function startGame() {
-      progress = 0;
-      isGameOver = false;
-      fallingObjects = [];
-      updateProgress(0);
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
 
-      document.querySelectorAll('.falling-item').forEach(el => el.remove());
+      // 1. Luces
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
-      gameArea.addEventListener('pointermove', onMove);
-      gameArea.addEventListener('pointerdown', onMove);
+      // 2. Fuga de gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
 
-      spawnTimer = setInterval(spawnItem, 620);
-      animFrame = requestAnimationFrame(gameLoop);
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
+      }
+
+      // 3. Controles
+      const notice = document.getElementById('inversionNotice');
+      if (sabControles && sabControles.active) {
+        isControlesActive = true;
+        document.body.classList.add('inverted-controls');
+        notice.style.display = 'inline-block';
+      } else {
+        isControlesActive = false;
+        document.body.classList.remove('inverted-controls');
+        notice.style.display = 'none';
+      }
     }
 
-    function onMove(e) {
-      if (isGameOver) return;
-      const rect = gameArea.getBoundingClientRect();
-      let x = e.clientX - rect.left;
-      x = Math.max(38, Math.min(rect.width - 38, x));
-      basketX = x;
-      basket.style.left = `${basketX}px`;
-    }
+    function setupTouchControls() {
+      const box = document.getElementById('canvasBox');
 
-    function spawnItem() {
-      if (isGameOver) return;
-      const rect = gameArea.getBoundingClientRect();
-      const def = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+      const handlePointer = (clientX) => {
+        const rect = canvas.getBoundingClientRect();
+        let targetX = clientX - rect.left;
 
-      const el = document.createElement('div');
-      el.className = 'falling-item';
-      el.innerText = def.icon;
-      gameArea.appendChild(el);
+        // INVERSIÓN: Si está activo el sabotaje de controles, se mueve en sentido inverso
+        if (isControlesActive) {
+          targetX = canvas.width - targetX;
+        }
 
-      const item = {
-        el: el,
-        type: def.type,
-        x: Math.random() * (rect.width - 60) + 30,
-        y: -30,
-        speed: Math.random() * 2 + 3.2
+        basket.x = targetX - basket.width / 2;
+        if (basket.x < 5) basket.x = 5;
+        if (basket.x > canvas.width - basket.width - 5) basket.x = canvas.width - basket.width - 5;
       };
 
-      fallingObjects.push(item);
+      box.addEventListener('pointerdown', (e) => {
+        if (isTaskDone || isPausedByMeeting) return;
+        isTouching = true;
+        box.setPointerCapture(e.pointerId);
+        handlePointer(e.clientX);
+      });
+
+      box.addEventListener('pointermove', (e) => {
+        if (!isTouching || isTaskDone || isPausedByMeeting) return;
+        handlePointer(e.clientX);
+      });
+
+      const endAction = (e) => {
+        isTouching = false;
+        try { box.releasePointerCapture(e.pointerId); } catch (_) {}
+      };
+
+      box.addEventListener('pointerup', endAction);
+      box.addEventListener('pointercancel', endAction);
+
+      // Compatibilidad con teclado (flechas o A/D)
+      window.addEventListener('keydown', (e) => {
+        if (isTaskDone || isPausedByMeeting) return;
+        let dir = 0;
+        if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') dir = -24;
+        if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') dir = 24;
+
+        if (isControlesActive) dir = -dir;
+
+        basket.x += dir;
+        if (basket.x < 5) basket.x = 5;
+        if (basket.x > canvas.width - basket.width - 5) basket.x = canvas.width - basket.width - 5;
+      });
     }
 
     function gameLoop() {
-      if (isGameOver) return;
-
-      const rect = gameArea.getBoundingClientRect();
-      const basketTop = rect.height - 55;
-      const basketBottom = rect.height - 10;
-
-      for (let i = fallingObjects.length - 1; i >= 0; i--) {
-        const item = fallingObjects[i];
-        item.y += item.speed;
-        item.el.style.left = `${item.x}px`;
-        item.el.style.top = `${item.y}px`;
-
-        if (item.y >= basketTop && item.y <= basketBottom) {
-          if (Math.abs(item.x - basketX) < 42) {
-            if (item.type === 'good') {
-              playBeep(520, 'sine', 0.1);
-              updateProgress(progress + 15);
-            } else {
-              playBeep(160, 'sawtooth', 0.25);
-              if (navigator.vibrate) navigator.vibrate(150);
-              updateProgress(progress - 12);
-            }
-            item.el.remove();
-            fallingObjects.splice(i, 1);
-            continue;
-          }
+      if (!isTaskDone) {
+        if (!isPausedByMeeting) {
+          updateGame();
         }
-
-        if (item.y > rect.height + 40) {
-          item.el.remove();
-          fallingObjects.splice(i, 1);
-        }
+        drawGame();
+        requestAnimationFrame(gameLoop);
       }
-
-      animFrame = requestAnimationFrame(gameLoop);
     }
 
-    async function updateProgress(val) {
-      progress = Math.max(0, Math.min(100, val));
-      progressBar.style.width = `${progress}%`;
-      percentLabel.innerText = `${progress}%`;
+    function updateGame() {
+      spawnTimer++;
+      // Generar elementos que caen
+      if (spawnTimer > 40) {
+        const isGood = Math.random() < 0.62; // 62% probabilidad de bebida
+        const symbol = isGood 
+          ? GOOD_ITEMS[Math.floor(Math.random() * GOOD_ITEMS.length)]
+          : BAD_ITEMS[Math.floor(Math.random() * BAD_ITEMS.length)];
 
-      if (progress >= 100 && !isGameOver) {
-        isGameOver = true;
-        clearInterval(spawnTimer);
-        cancelAnimationFrame(animFrame);
-
-        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
-        playBeep(880, 'sine', 0.4);
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
-        await releaseSession();
+        items.push({
+          x: 20 + Math.random() * (canvas.width - 40),
+          y: -20,
+          speed: 2.8 + Math.random() * 1.8,
+          isGood: isGood,
+          symbol: symbol,
+          size: 26
+        });
+        spawnTimer = 0;
       }
+
+      // Mover elementos y comprobar colisión con la cesta
+      for (let i = items.length - 1; i >= 0; i--) {
+        const it = items[i];
+        it.y += it.speed;
+
+        // Comprobación de atrapado en la cesta
+        const caughtX = it.x >= basket.x - 10 && it.x <= basket.x + basket.width + 10;
+        const caughtY = it.y >= basket.y - 12 && it.y <= basket.y + basket.height + 4;
+
+        if (caughtX && caughtY) {
+          if (it.isGood) {
+            // Objeto bueno (bebida): suma progreso
+            playBeep(520, 'sine', 0.08);
+            progress = Math.min(TARGET_PROGRESS, progress + 12);
+          } else {
+            // Objeto malo (mando, pila, móvil...): resta progreso
+            playBeep(140, 'sawtooth', 0.2);
+            if (navigator.vibrate) navigator.vibrate(120);
+            progress = Math.max(0, progress - 15);
+          }
+
+          document.getElementById('progressBar').style.width = `${progress}%`;
+          items.splice(i, 1);
+
+          if (progress >= TARGET_PROGRESS) {
+            completeTask();
+            return;
+          }
+          continue;
+        }
+
+        // Si sale de la pantalla por abajo
+        if (it.y > canvas.height + 30) {
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    function drawGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Fondo de la zona de caída
+      ctx.fillStyle = '#090e1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Línea de suelo
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, basket.y + basket.height + 6);
+      ctx.lineTo(canvas.width, basket.y + basket.height + 6);
+      ctx.stroke();
+
+      // Dibujar objetos cayendo
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = '24px sans-serif';
+
+      items.forEach(it => {
+        ctx.fillText(it.symbol, it.x, it.y);
+      });
+
+      // Dibujar la cesta del jugador
+      ctx.fillStyle = '#b45309';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+
+      ctx.beginPath();
+      ctx.roundRect(basket.x, basket.y, basket.width, basket.height, [4, 4, 12, 12]);
+      ctx.fill();
+      ctx.stroke();
+
+      // Icono / Detalle visual en la cesta
+      ctx.font = '16px sans-serif';
+      ctx.fillText(basket.icon, basket.x + basket.width / 2, basket.y + basket.height / 2);
+    }
+
+    async function completeTask() {
+      isTaskDone = true;
+      document.getElementById('status').innerText = '¡CASCADA COMPLETADA!';
+      document.getElementById('status').style.color = '#22c55e';
+      playBeep(880, 'sine', 0.4);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+      await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+      await releaseSession();
     }
   </script>
 </body>
