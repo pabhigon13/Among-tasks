@@ -30,7 +30,6 @@
       gap: 1rem;
     }
 
-    /* Pantalla completa de Victoria del Impostor */
     #victoryOverlay {
       display: none;
       position: fixed;
@@ -67,7 +66,7 @@
     }
     .busy-box {
       background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
-      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+      padding: 1rem; margin: 1rem; max-width: 320px; display: none;
     }
 
     .card {
@@ -211,7 +210,6 @@
 </head>
 <body>
 
-  <!-- Pantalla de Victoria del Impostor -->
   <div id="victoryOverlay">
     <div style="font-size: 4rem; margin-bottom: 0.5rem;">👑☠️</div>
     <h1 style="font-size: 2.2rem; color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡VICTORIA DEL IMPOSTOR!</h1>
@@ -225,9 +223,9 @@
     <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y configuración de la partida</p>
     
     <div id="busyAlert" class="busy-box">
-      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
-      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
-      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+      <div style="font-size: 2.2rem; margin-bottom: 0.4rem;">🚫🕵️</div>
+      <strong style="color: #ef4444; font-size: 1rem; letter-spacing: 1px;">ACCESO DENEGADO</strong>
+      <p id="busyMsg" style="font-size: 0.9rem; color: #cbd5e1; margin: 0.6rem 0 0 0; line-height: 1.4;"></p>
     </div>
 
     <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
@@ -242,7 +240,6 @@
       <p class="subtitle">Canal encubierto de interferencia y sabotaje</p>
     </div>
 
-    <!-- Progreso Global -->
     <div class="card">
       <div class="card-title">
         <span>PROGRESO DE TRIPULACIÓN</span>
@@ -261,7 +258,6 @@
       <div class="task-breakdown-list" id="taskBreakdownGrid"></div>
     </div>
 
-    <!-- Sabotajes -->
     <div class="card">
       <div class="card-title">
         <span>SISTEMA DE SABOTAJE</span>
@@ -284,7 +280,6 @@
       </button>
     </div>
 
-    <!-- Radar -->
     <div class="card">
       <div class="card-title">
         <span>RADAR DE OCUPACIÓN</span>
@@ -362,11 +357,13 @@
         const lastSeen = new Date(session.last_heartbeat).getTime();
         const secondsAgo = (now - lastSeen) / 1000;
 
+        // Si ya hay alguien conectado y no es la misma persona reconectando:
         if (secondsAgo < 12 && session.player_name !== currentPlayer) {
           document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
-          document.getElementById('ovDesc').innerText = 'Ya hay un impostor conectado al terminal.';
+          document.getElementById('ovDesc').innerText = 'Canal exclusivo restringido';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} tiene la sesión abierta.`;
+          // Mensaje anónimo sin revelar el nombre del impostor
+          document.getElementById('busyMsg').innerHTML = 'Este panel está siendo usado por el impostor.<br><b>Tú no lo eres</b>, ve a hacer tareas e investigar.';
           inputName.style.display = 'none';
           inputCount.style.display = 'none';
           document.getElementById('btnStart').style.display = 'none';
