@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Mantenimiento: Calibración Numérica</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Laboratorio: Operación</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -13,7 +16,7 @@
       user-select: none;
     }
     body {
-      background: #080d08;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
@@ -25,139 +28,185 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
+      transition: transform 0.3s ease;
     }
-    h2 { margin: 0 0 0.2rem 0; color: #a3e635; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
 
-    /* Mueble principal */
-    .calc-terminal {
-      background: #141f14;
-      border: 4px solid #283e28;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 350px;
-      padding: 1.2rem;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
-      display: flex;
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
+    }
+
+    /* Banners y Overlays de Emergencias */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 900;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
       flex-direction: column;
-      gap: 1rem;
-    }
-
-    /* Pantalla LCD superior */
-    .screen-calc {
-      background: #040804;
-      border: 3px solid #1c2b1c;
-      border-radius: 12px;
-      padding: 1rem 0.8rem;
-      display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      min-height: 75px;
-      box-shadow: inset 0 4px 10px rgba(0,0,0,0.9);
-      font-family: "Courier New", monospace;
-    }
-    .math-expression {
-      font-size: 1.5rem;
-      font-weight: 900;
-      color: #bef264;
-      letter-spacing: 2px;
-      white-space: nowrap;
-    }
-    .equal-sign {
-      font-size: 1.5rem;
-      font-weight: 900;
-      color: #a3e635;
+      padding: 1.5rem;
     }
 
-    /* Cuadraditos de los dígitos de respuesta */
-    .digit-boxes {
-      display: flex;
-      gap: 6px;
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
-    .digit-box {
-      width: 32px;
-      height: 42px;
-      background: #0f1a0f;
-      border: 2px solid #3f6212;
+
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.15rem 0; color: #a3e635; letter-spacing: 2px; }
+    p { margin: 0 0 0.5rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    #inversionNotice {
+      display: none;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #facc15;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px dashed #facc15;
       border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.5rem;
-      font-weight: 900;
-      color: #f7fee7;
-      box-shadow: 0 0 6px rgba(163, 230, 53, 0.2);
-    }
-    .digit-box.active-cursor {
-      border-color: #a3e635;
-      box-shadow: 0 0 10px #a3e635;
-      animation: pulseCursor 1s infinite alternate;
-    }
-    .digit-box.error {
-      background: #450a0a;
-      border-color: #ef4444;
-      color: #fca5a5;
-    }
-
-    @keyframes pulseCursor {
-      from { border-color: #65a30d; }
-      to { border-color: #bef264; }
-    }
-
-    /* Teclado numérico */
-    .keypad {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-    }
-    .key-btn {
-      aspect-ratio: 1.25;
-      background: #1e2e1e;
-      border: 2px solid #365314;
-      border-radius: 10px;
-      color: #d9f99d;
-      font-size: 1.5rem;
-      font-weight: bold;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 4px 0 #14200d;
-      transition: all 0.08s;
-    }
-    .key-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0 #14200d;
-      background: #2b422b;
-    }
-    .key-btn.btn-action-del {
-      background: #3a2218;
-      border-color: #7c2d12;
-      color: #fdba74;
-      box-shadow: 0 4px 0 #20110b;
-      font-size: 1.4rem;
-    }
-    .key-btn.btn-action-enter {
-      background: #14532d;
-      border-color: #15803d;
-      color: #86efac;
-      box-shadow: 0 4px 0 #0b2e19;
-      font-size: 1.4rem;
-    }
-
-    #status {
-      margin-top: 1rem;
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: #22c55e;
-      min-height: 1.6rem;
+      padding: 3px 8px;
+      margin-bottom: 0.6rem;
       letter-spacing: 1px;
     }
 
-    /* Capa de inicio y bloqueo */
+    /* Consola de Laboratorio */
+    .calc-box {
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 22px;
+      width: 100%;
+      max-width: 320px;
+      padding: 1.2rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* Pantalla LCD Operación */
+    .screen-container {
+      background: #030712;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      text-align: right;
+      font-family: monospace;
+    }
+    .math-formula {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #a3e635;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px rgba(163, 230, 53, 0.4);
+    }
+    .user-entry {
+      font-size: 1.7rem;
+      font-weight: 900;
+      color: #fff;
+      min-height: 2rem;
+      letter-spacing: 3px;
+    }
+
+    /* Teclado Numérico */
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .calc-btn {
+      aspect-ratio: 1.2;
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #334155;
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1.35rem;
+      font-weight: 900;
+      font-family: monospace;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #070b14;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.05s ease;
+    }
+    .calc-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #070b14;
+      background: #334155;
+    }
+    .btn-clear {
+      background: linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%);
+      border-color: #ef4444;
+      color: #fca5a5;
+    }
+    .btn-clear:active {
+      background: #ef4444;
+      color: #fff;
+    }
+    .btn-enter {
+      background: linear-gradient(180deg, #15803d 0%, #166534 100%);
+      border-color: #22c55e;
+      color: #86efac;
+    }
+    .btn-enter:active {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    #status {
+      margin-top: 0.6rem;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: #22c55e;
+      min-height: 1.4rem;
+    }
+
     #overlay {
-      position: fixed; inset: 0; background: #080d08; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -165,7 +214,7 @@
       color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #65a30d; color: #fff;
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #a3e635; color: #000;
       border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     .btn-retry {
@@ -180,7 +229,40 @@
 </head>
 <body>
 
-  <!-- Overlay -->
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Cálculo pausado. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #a3e635;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -196,34 +278,18 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>OPERACIÓN</h2>
-  <p>Resuelve el cálculo numérico para calibrar el sistema</p>
+  <h2>LABORATORIO: OPERACIÓN</h2>
+  <p>Calcula el valor e introduce la respuesta correcta</p>
+  <div id="inversionNotice">🌀 CONTROLES INVERTIDOS: NÚMEROS INVERTIDOS</div>
 
-  <div class="calc-terminal">
-    <!-- Pantalla LCD -->
-    <div class="screen-calc">
-      <div class="math-expression" id="mathExp">-- ? --</div>
-      <div class="equal-sign">=</div>
-      <div class="digit-boxes" id="digitBoxes"></div>
+  <div class="calc-box">
+    <div class="screen-container">
+      <div class="math-formula" id="formulaDisplay">-- + --</div>
+      <div class="user-entry" id="entryDisplay">_</div>
     </div>
 
-    <!-- Teclado Numérico con ⌫ a la izquierda y ↵ a la derecha del 0 -->
-    <div class="keypad">
-      <button class="key-btn" onclick="pressDigit(1)">1</button>
-      <button class="key-btn" onclick="pressDigit(2)">2</button>
-      <button class="key-btn" onclick="pressDigit(3)">3</button>
-
-      <button class="key-btn" onclick="pressDigit(4)">4</button>
-      <button class="key-btn" onclick="pressDigit(5)">5</button>
-      <button class="key-btn" onclick="pressDigit(6)">6</button>
-
-      <button class="key-btn" onclick="pressDigit(7)">7</button>
-      <button class="key-btn" onclick="pressDigit(8)">8</button>
-      <button class="key-btn" onclick="pressDigit(9)">9</button>
-
-      <button class="key-btn btn-action-del" onclick="deleteDigit()">⌫</button>
-      <button class="key-btn" onclick="pressDigit(0)">0</button>
-      <button class="key-btn btn-action-enter" onclick="checkAnswer()">↵</button>
+    <div class="keypad-grid" id="keypadGrid">
+      <!-- Botones numéricos generados por JS -->
     </div>
   </div>
 
@@ -235,28 +301,31 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
 
-    // Variables de la operación
-    let correctAnswer = 0;
-    let requiredLength = 0;
-    let enteredDigits = "";
-    let isLocked = false;
+    let targetResult = 0;
+    let userEntry = '';
+    let isTaskDone = false;
+    let isControlesActive = false;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.12) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.14, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -279,6 +348,7 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
 
       const { data: doneData } = await client
         .from('completed_tasks')
@@ -312,7 +382,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -324,7 +394,12 @@
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      generateMathProblem();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      generateFormula();
+      renderKeypad();
     }
 
     async function takeSession() {
@@ -345,120 +420,163 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Generador de Operaciones
-    function randomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    function generateMathProblem() {
-      enteredDigits = "";
-      isLocked = false;
-      const opTypes = ['add', 'sub', 'mul', 'div'];
-      const chosenType = opTypes[Math.floor(Math.random() * opTypes.length)];
-
-      let exprText = "";
-
-      if (chosenType === 'add') {
-        const a = randomInt(12, 450);
-        const b = randomInt(15, 450);
-        correctAnswer = a + b;
-        exprText = `${a} + ${b}`;
-      } else if (chosenType === 'sub') {
-        let a = randomInt(25, 600);
-        let b = randomInt(10, 600);
-        if (a < b) [a, b] = [b, a]; // Asegurar resultado positivo
-        correctAnswer = a - b;
-        exprText = `${a} - ${b}`;
-      } else if (chosenType === 'mul') {
-        const a = randomInt(11, 220); // 2 o 3 cifras
-        const b = randomInt(2, 9);    // 1 cifra
-        correctAnswer = a * b;
-        exprText = `${a} × ${b}`;
-      } else if (chosenType === 'div') {
-        const divisor = randomInt(2, 9); // 1 cifra
-        const quotient = randomInt(5, 25);
-        const dividend = divisor * quotient; // 2 cifras exacto
-        correctAnswer = quotient;
-        exprText = `${dividend} ÷ ${divisor}`;
+    async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        meetEl.style.display = 'none';
       }
 
-      requiredLength = String(correctAnswer).length;
-      document.getElementById('mathExp').innerText = exprText;
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-      // Renderizar los cuadraditos de la longitud exacta
-      const boxesContainer = document.getElementById('digitBoxes');
-      boxesContainer.innerHTML = '';
-      for (let i = 0; i < requiredLength; i++) {
-        const box = document.createElement('div');
-        box.className = 'digit-box';
-        box.id = `box-${i}`;
-        boxesContainer.appendChild(box);
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
+
+      // 1. Luces
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
+
+      // 2. Fuga de gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
+
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
       }
 
-      updateDisplay();
-    }
+      // 3. Controles
+      const notice = document.getElementById('inversionNotice');
+      const wasControles = isControlesActive;
+      if (sabControles && sabControles.active) {
+        isControlesActive = true;
+        document.body.classList.add('inverted-controls');
+        notice.style.display = 'inline-block';
+      } else {
+        isControlesActive = false;
+        document.body.classList.remove('inverted-controls');
+        notice.style.display = 'none';
+      }
 
-    function updateDisplay() {
-      for (let i = 0; i < requiredLength; i++) {
-        const box = document.getElementById(`box-${i}`);
-        if (!box) continue;
-        box.innerText = enteredDigits[i] || '';
-        box.classList.remove('active-cursor', 'error');
-
-        // Resaltar la casilla actual donde va a escribirse el siguiente número
-        if (i === enteredDigits.length && !isLocked) {
-          box.classList.add('active-cursor');
-        }
+      if (wasControles !== isControlesActive) {
+        renderKeypad(); // Reordena o invierte los números según el estado del sabotaje
       }
     }
 
-    function pressDigit(num) {
-      if (isLocked) return;
-      if (enteredDigits.length < requiredLength) {
-        enteredDigits += num;
-        playBeep(350 + (num * 30), 'sine', 0.1);
-        updateDisplay();
+    function generateFormula() {
+      // Tipos de operaciones: 0 = suma, 1 = resta, 2 = multiplicación simple
+      const type = Math.floor(Math.random() * 3);
+      let a, b, symbol;
+
+      if (type === 0) {
+        a = Math.floor(Math.random() * 45) + 12;
+        b = Math.floor(Math.random() * 45) + 12;
+        targetResult = a + b;
+        symbol = '+';
+      } else if (type === 1) {
+        a = Math.floor(Math.random() * 50) + 30;
+        b = Math.floor(Math.random() * 25) + 5;
+        targetResult = a - b;
+        symbol = '-';
+      } else {
+        a = Math.floor(Math.random() * 9) + 4;
+        b = Math.floor(Math.random() * 8) + 3;
+        targetResult = a * b;
+        symbol = '×';
       }
+
+      userEntry = '';
+      document.getElementById('formulaDisplay').innerText = `${a} ${symbol} ${b} = ?`;
+      document.getElementById('entryDisplay').innerText = '_';
     }
 
-    function deleteDigit() {
-      if (isLocked) return;
-      if (enteredDigits.length > 0) {
-        enteredDigits = enteredDigits.slice(0, -1);
-        playBeep(240, 'triangle', 0.1);
-        updateDisplay();
-      }
+    function renderKeypad() {
+      const grid = document.getElementById('keypadGrid');
+      grid.innerHTML = '';
+
+      // Si los controles están invertidos, se invierte el orden del 1 al 9
+      const nums = isControlesActive ? [9, 8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+      nums.forEach(n => {
+        const btn = document.createElement('button');
+        btn.className = 'calc-btn';
+        btn.innerText = n;
+        btn.onclick = () => pressDigit(n);
+        grid.appendChild(btn);
+      });
+
+      // Fila inferior: Borrar (C), 0, Validar (OK)
+      const btnC = document.createElement('button');
+      btnC.className = 'calc-btn btn-clear';
+      btnC.innerText = 'C';
+      btnC.onclick = clearEntry;
+      grid.appendChild(btnC);
+
+      const btn0 = document.createElement('button');
+      btn0.className = 'calc-btn';
+      btn0.innerText = '0';
+      btn0.onclick = () => pressDigit(0);
+      grid.appendChild(btn0);
+
+      const btnOk = document.createElement('button');
+      btnOk.className = 'calc-btn btn-enter';
+      btnOk.innerText = 'OK';
+      btnOk.onclick = submitAnswer;
+      grid.appendChild(btnOk);
     }
 
-    async function checkAnswer() {
-      if (isLocked) return;
-      if (enteredDigits.length === 0) return;
+    function pressDigit(d) {
+      if (isTaskDone || userEntry.length >= 4) return;
+      playBeep(420, 'sine', 0.05);
+      userEntry += d.toString();
+      document.getElementById('entryDisplay').innerText = userEntry;
+    }
 
-      const userVal = parseInt(enteredDigits, 10);
+    function clearEntry() {
+      if (isTaskDone) return;
+      playBeep(260, 'sine', 0.06);
+      userEntry = '';
+      document.getElementById('entryDisplay').innerText = '_';
+    }
 
-      if (userVal === correctAnswer) {
-        // Correcto
-        isLocked = true;
-        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
-        playBeep(650, 'sine', 0.15);
-        setTimeout(() => playBeep(920, 'sine', 0.35), 130);
+    async function submitAnswer() {
+      if (isTaskDone || userEntry === '') return;
+
+      const answer = parseInt(userEntry, 10);
+
+      if (answer === targetResult) {
+        isTaskDone = true;
+        document.getElementById('status').innerText = '¡CÁLCULO CORRECTO!';
+        document.getElementById('status').style.color = '#22c55e';
+        playBeep(880, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
         await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
         await releaseSession();
       } else {
-        // Incorrecto
-        isLocked = true;
-        playBeep(160, 'sawtooth', 0.35);
-        if (navigator.vibrate) navigator.vibrate(250);
-
-        for (let i = 0; i < requiredLength; i++) {
-          const box = document.getElementById(`box-${i}`);
-          if (box) box.classList.add('error');
-        }
+        playBeep(140, 'sawtooth', 0.3);
+        if (navigator.vibrate) navigator.vibrate(200);
+        document.getElementById('status').innerText = '¡RESULTADO ERRÓNEO!';
+        document.getElementById('status').style.color = '#ef4444';
 
         setTimeout(() => {
-          generateMathProblem(); // Nueva operación tras el error
+          if (!isTaskDone) {
+            document.getElementById('status').innerText = '';
+            generateFormula();
+          }
         }, 800);
       }
     }
