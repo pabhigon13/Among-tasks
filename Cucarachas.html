@@ -122,37 +122,38 @@
       overflow: hidden;
       cursor: crosshair;
 
-      /* Suelo de baldosas blancas de cocina con juntas */
-      background-color: #f1f5f9;
+      /* Suelo de baldosas blancas */
+      background-color: #f8fafc;
       background-image: 
         linear-gradient(to right, #cbd5e1 2px, transparent 2px),
         linear-gradient(to bottom, #cbd5e1 2px, transparent 2px);
       background-size: 40px 40px;
     }
 
-    /* Muebles de Cocina Cenitales */
+    /* Muebles situados en capas superiores (z-index: 6) para que los bichos salgan y se metan por debajo */
     .countertop {
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 52px;
-      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
-      border-bottom: 4px solid #334155;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.25);
+      height: 56px;
+      background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
+      border-bottom: 4px solid #1e293b;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.35);
       display: flex;
       align-items: center;
       justify-content: space-around;
       padding: 0 10px;
       pointer-events: none;
-      z-index: 2;
+      z-index: 6;
     }
     .sink {
-      width: 60px; height: 34px;
-      background: #475569;
-      border: 2px solid #1e293b;
-      border-radius: 4px;
+      width: 64px; height: 38px;
+      background: #334155;
+      border: 2px solid #0f172a;
+      border-radius: 5px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
     }
     .stove {
-      width: 60px; height: 34px;
+      width: 64px; height: 38px;
       background: #1e293b;
       border: 2px solid #0f172a;
       border-radius: 4px;
@@ -161,71 +162,84 @@
       justify-content: space-around;
     }
     .burner {
-      width: 12px; height: 12px;
+      width: 13px; height: 13px;
       border-radius: 50%;
       border: 2px solid #ef4444;
+      background: #450a0a;
     }
 
+    /* Nevera realista (diseño metálico sin texto) */
     .fridge {
       position: absolute;
       bottom: 0; left: 0;
-      width: 68px; height: 85px;
-      background: linear-gradient(90deg, #e2e8f0 0%, #cbd5e1 100%);
-      border-top: 3px solid #64748b;
-      border-right: 3px solid #64748b;
-      border-radius: 0 10px 0 0;
-      box-shadow: 3px -3px 8px rgba(0,0,0,0.2);
+      width: 72px; height: 95px;
+      background: linear-gradient(135deg, #e2e8f0 0%, #94a3b8 100%);
+      border-top: 3px solid #475569;
+      border-right: 3px solid #475569;
+      border-radius: 0 12px 0 0;
+      box-shadow: 4px -4px 12px rgba(0,0,0,0.3);
       pointer-events: none;
-      z-index: 2;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.65rem;
-      font-weight: 900;
-      color: #475569;
+      z-index: 6;
+    }
+    .fridge-handle {
+      position: absolute;
+      right: 8px;
+      top: 25px;
+      width: 5px;
+      height: 40px;
+      background: #475569;
+      border-radius: 2px;
+      box-shadow: 1px 1px 2px rgba(0,0,0,0.3);
     }
 
+    /* Cubo de basura de pedal metálico (sin emojis) */
     .trash-can {
       position: absolute;
       bottom: 12px; right: 12px;
-      width: 42px; height: 42px;
-      background: #334155;
-      border: 3px solid #1e293b;
+      width: 44px; height: 44px;
+      background: radial-gradient(circle, #64748b 0%, #1e293b 80%);
+      border: 3px solid #0f172a;
       border-radius: 50%;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 5px 10px rgba(0,0,0,0.4);
       pointer-events: none;
-      z-index: 2;
+      z-index: 6;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: center;
-      font-size: 1.1rem;
+      padding-bottom: 4px;
+    }
+    .trash-pedal {
+      width: 14px;
+      height: 4px;
+      background: #000;
+      border-radius: 2px;
     }
 
     /* Contador */
     .roach-counter {
       position: absolute;
-      top: 60px; right: 10px;
-      background: rgba(15, 23, 42, 0.85);
+      top: 64px; right: 10px;
+      background: rgba(15, 23, 42, 0.88);
       border: 1px solid #475569;
       border-radius: 6px;
-      padding: 4px 8px;
+      padding: 4px 10px;
       font-family: monospace;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 900;
       color: #f59e0b;
       z-index: 10;
       pointer-events: none;
     }
 
-    /* Cucaracha realista dibujada en SVG */
+    /* Cucaracha (z-index: 4, por debajo de muebles) */
     .roach {
       position: absolute;
       width: 38px;
       height: 38px;
       cursor: pointer;
       transform: translate(-50%, -50%);
-      z-index: 5;
-      transition: transform 0.08s ease-out;
+      z-index: 4;
+      pointer-events: auto;
     }
 
     .roach svg {
@@ -235,25 +249,16 @@
     }
 
     /* Mancha al aplastarla */
-    .roach.dead {
-      pointer-events: none;
-      filter: none;
-    }
-    .roach.dead svg {
-      display: none;
-    }
-    .roach.dead .splat-mark {
-      display: block;
-    }
-
     .splat-mark {
-      display: none;
-      width: 32px;
-      height: 32px;
+      position: absolute;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: radial-gradient(circle, #78350f 0%, #451a03 70%, transparent 100%);
-      opacity: 0.8;
-      transform: scale(1.1);
+      transform: translate(-50%, -50%);
+      opacity: 0.85;
+      pointer-events: none;
+      z-index: 3;
     }
 
     #status {
@@ -342,7 +347,7 @@
   <div id="inversionNotice">🌀 CONTROLES INVERTIDOS: TOCA EL LADO OPUESTO</div>
 
   <div class="kitchen-frame" id="kitchenFrame">
-    <!-- Encimera superior con fregadero y fogones -->
+    <!-- Encimera superior -->
     <div class="countertop">
       <div class="sink"></div>
       <div class="stove">
@@ -351,14 +356,18 @@
       </div>
     </div>
 
-    <!-- Nevera abajo a la izquierda -->
-    <div class="fridge">NEVERA</div>
+    <!-- Nevera -->
+    <div class="fridge">
+      <div class="fridge-handle"></div>
+    </div>
 
-    <!-- Cubo de basura abajo a la derecha -->
-    <div class="trash-can">🗑️</div>
+    <!-- Cubo de basura -->
+    <div class="trash-can">
+      <div class="trash-pedal"></div>
+    </div>
 
-    <!-- Marcador de cucarachas vivas -->
-    <div class="roach-counter" id="roachCounter">RESTANTES: 8</div>
+    <!-- Marcador -->
+    <div class="roach-counter" id="roachCounter">APLASTADAS: 0 / 20</div>
   </div>
 
   <div id="status"></div>
@@ -372,38 +381,34 @@
     let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
 
-    const TOTAL_ROACHES = 8;
-    let remainingRoaches = TOTAL_ROACHES;
-    let roaches = [];
-    let animTimer = null;
+    const TARGET_ROACHES = 20;
+    let squashedCount = 0;
+    let activeRoaches = [];
+    let loopTimer = null;
+    let spawnTimer = 0;
+
     let isTaskDone = false;
     let isControlesActive = false;
     let isPausedByMeeting = false;
 
     const kitchen = document.getElementById('kitchenFrame');
 
-    // Plantilla SVG realista de cucaracha marrón con patas y antenas
     const ROACH_SVG = `
       <svg viewBox="0 0 100 100">
-        <!-- Antenas finas -->
         <path d="M 45 20 Q 30 5 15 2" stroke="#3b1d11" stroke-width="2.5" fill="none" stroke-linecap="round"/>
         <path d="M 55 20 Q 70 5 85 2" stroke="#3b1d11" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <!-- 6 Patas articuladas -->
         <path d="M 38 40 Q 15 32 5 20" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
         <path d="M 62 40 Q 85 32 95 20" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
         <path d="M 36 52 Q 10 50 2 54" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
         <path d="M 64 52 Q 90 50 98 54" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
         <path d="M 38 65 Q 12 75 8 95" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
         <path d="M 62 65 Q 88 75 92 95" stroke="#4a2511" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <!-- Cabeza y Pronoto -->
         <ellipse cx="50" cy="24" rx="7" ry="5" fill="#261107" />
         <ellipse cx="50" cy="33" rx="14" ry="10" fill="#3b190b" />
-        <!-- Abdomen / Alas quitinosas brillantes -->
         <ellipse cx="50" cy="58" rx="13" ry="24" fill="#542611" />
         <ellipse cx="50" cy="58" rx="9" ry="20" fill="#713417" />
         <line x1="50" y1="36" x2="50" y2="82" stroke="#261107" stroke-width="2"/>
       </svg>
-      <div class="splat-mark"></div>
     `;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -495,7 +500,7 @@
       checkSabotages();
       setInterval(checkSabotages, 1500);
 
-      spawnKitchenRoaches();
+      startRoachSimulation();
     }
 
     async function takeSession() {
@@ -569,76 +574,114 @@
       }
     }
 
-    function spawnKitchenRoaches() {
-      kitchen.querySelectorAll('.roach').forEach(e => e.remove());
-      roaches = [];
-      remainingRoaches = TOTAL_ROACHES;
-      document.getElementById('roachCounter').innerText = `RESTANTES: ${remainingRoaches}`;
+    function startRoachSimulation() {
+      kitchen.querySelectorAll('.roach, .splat-mark').forEach(e => e.remove());
+      activeRoaches = [];
+      squashedCount = 0;
+      updateCounterUI();
 
-      const kw = kitchen.clientWidth;
-      const kh = kitchen.clientHeight;
-
-      for (let i = 0; i < TOTAL_ROACHES; i++) {
-        const div = document.createElement('div');
-        div.className = 'roach';
-        div.innerHTML = ROACH_SVG;
-
-        const roach = {
-          id: i,
-          el: div,
-          x: 40 + Math.random() * (kw - 80),
-          y: 70 + Math.random() * (kh - 140),
-          speed: 2.2 + Math.random() * 2.2,
-          angle: Math.random() * Math.PI * 2,
-          dead: false
-        };
-
-        div.style.left = `${roach.x}px`;
-        div.style.top = `${roach.y}px`;
-        kitchen.appendChild(div);
-        roaches.push(roach);
+      // Generar 4 cucarachas iniciales
+      for (let i = 0; i < 4; i++) {
+        spawnSingleRoach();
       }
 
       setupTapListener();
 
-      if (animTimer) clearInterval(animTimer);
-      animTimer = setInterval(moveRoaches, 50);
+      if (loopTimer) clearInterval(loopTimer);
+      loopTimer = setInterval(updateSimulation, 45);
     }
 
-    function moveRoaches() {
+    function spawnSingleRoach() {
+      const kw = kitchen.clientWidth;
+      const kh = kitchen.clientHeight;
+
+      // Lugares de salida (escondrijos):
+      // 0: debajo de encimera (arriba)
+      // 1: detrás de la nevera (abajo-izquierda)
+      // 2: debajo de la basura (abajo-derecha)
+      // 3: borde exterior izquierdo
+      // 4: borde exterior derecho
+      const originType = Math.floor(Math.random() * 5);
+      let startX, startY, angle;
+
+      if (originType === 0) {
+        startX = 40 + Math.random() * (kw - 80);
+        startY = 20; // Debajo de la encimera
+        angle = Math.PI / 2 + (Math.random() - 0.5) * 0.8; // Hacia abajo
+      } else if (originType === 1) {
+        startX = 35;
+        startY = kh - 45; // Debajo de la nevera
+        angle = -Math.PI / 4 + (Math.random() - 0.5) * 0.8; // Hacia el centro
+      } else if (originType === 2) {
+        startX = kw - 35;
+        startY = kh - 35; // Cerca de la basura
+        angle = -Math.PI * 0.75 + (Math.random() - 0.5) * 0.8;
+      } else if (originType === 3) {
+        startX = -20;
+        startY = 80 + Math.random() * (kh - 120);
+        angle = 0 + (Math.random() - 0.5) * 0.6; // Entra por la izquierda
+      } else {
+        startX = kw + 20;
+        startY = 80 + Math.random() * (kh - 120);
+        angle = Math.PI + (Math.random() - 0.5) * 0.6; // Entra por la derecha
+      }
+
+      const div = document.createElement('div');
+      div.className = 'roach';
+      div.innerHTML = ROACH_SVG;
+      div.style.left = `${startX}px`;
+      div.style.top = `${startY}px`;
+      kitchen.appendChild(div);
+
+      activeRoaches.push({
+        el: div,
+        x: startX,
+        y: startY,
+        speed: 2.2 + Math.random() * 2.4,
+        angle: angle,
+        dead: false
+      });
+    }
+
+    function updateSimulation() {
       if (isPausedByMeeting || isTaskDone) return;
 
       const kw = kitchen.clientWidth;
       const kh = kitchen.clientHeight;
 
-      roaches.forEach(r => {
-        if (r.dead) return;
+      // Aparición periódica continua si hay menos de 5 simultáneas en pantalla
+      spawnTimer++;
+      if (spawnTimer > 28 && activeRoaches.filter(r => !r.dead).length < 5) {
+        spawnSingleRoach();
+        spawnTimer = 0;
+      }
 
-        // Movimiento en su dirección actual
+      // Mover y verificar si salen de la pantalla
+      for (let i = activeRoaches.length - 1; i >= 0; i--) {
+        const r = activeRoaches[i];
+        if (r.dead) continue;
+
         r.x += Math.cos(r.angle) * r.speed;
         r.y += Math.sin(r.angle) * r.speed;
 
-        // Giros y quiebros impredecibles típicos de cucarachas
-        if (Math.random() < 0.12) {
-          r.angle += (Math.random() - 0.5) * 1.5;
-        }
-
-        // Rebotes en paredes y obstáculos (encimera arriba y nevera abajo izquierda)
-        if (r.x < 24) { r.x = 24; r.angle = Math.PI - r.angle; }
-        if (r.x > kw - 24) { r.x = kw - 24; r.angle = Math.PI - r.angle; }
-        if (r.y < 65) { r.y = 65; r.angle = -r.angle; } // Choque con encimera
-        if (r.y > kh - 24) { r.y = kh - 24; r.angle = -r.angle; }
-
-        // Colisión con la nevera (esquina inferior izquierda)
-        if (r.x < 74 && r.y > kh - 90) {
-          r.angle += Math.PI * 0.7;
+        // Giros y quiebros impredecibles
+        if (Math.random() < 0.08) {
+          r.angle += (Math.random() - 0.5) * 1.1;
         }
 
         const deg = r.angle * (180 / Math.PI) + 90;
         r.el.style.left = `${r.x}px`;
         r.el.style.top = `${r.y}px`;
         r.el.style.transform = `translate(-50%, -50%) rotate(${deg}deg)`;
-      });
+
+        // SI LLEGAN AL FINAL O SALEN DE LA PANTALLA:
+        // No rebotan; si se alejan de los bordes o se meten al fondo, se eliminan y el nido sacará otra
+        const isFarOut = (r.x < -40 || r.x > kw + 40 || r.y < -30 || r.y > kh + 40);
+        if (isFarOut) {
+          r.el.remove();
+          activeRoaches.splice(i, 1);
+        }
+      }
     }
 
     function setupTapListener() {
@@ -649,20 +692,21 @@
         let tapX = e.clientX - rect.left;
         let tapY = e.clientY - rect.top;
 
-        // INVERSIÓN: Si está activo el sabotaje de controles, el golpe real cae en el punto simétrico opuesto
+        // INVERSIÓN: Si está activo el sabotaje de controles, el golpe cae en el punto simétrico opuesto
         if (isControlesActive) {
           tapX = kitchen.clientWidth - tapX;
           tapY = kitchen.clientHeight - tapY;
         }
 
         let hit = false;
-        for (let i = 0; i < roaches.length; i++) {
-          const r = roaches[i];
+        for (let i = 0; i < activeRoaches.length; i++) {
+          const r = activeRoaches[i];
           if (r.dead) continue;
 
+          // Solo se puede aplastar si ya salió a la vista (lejos del borde de la encimera o del exterior)
           const dist = Math.hypot(tapX - r.x, tapY - r.y);
-          if (dist < 32) {
-            killRoach(r);
+          if (dist < 34) {
+            splatRoach(r);
             hit = true;
             break;
           }
@@ -674,23 +718,35 @@
       });
     }
 
-    function killRoach(r) {
+    function splatRoach(r) {
       r.dead = true;
-      r.el.classList.add('dead');
+      r.el.remove(); // Quitamos la cucaracha viva
+
+      // Dejar mancha permanente en el suelo de la cocina
+      const splat = document.createElement('div');
+      splat.className = 'splat-mark';
+      splat.style.left = `${r.x}px`;
+      splat.style.top = `${r.y}px`;
+      kitchen.appendChild(splat);
+
       playBeep(340, 'sawtooth', 0.12);
       if (navigator.vibrate) navigator.vibrate(60);
 
-      remainingRoaches--;
-      document.getElementById('roachCounter').innerText = `RESTANTES: ${remainingRoaches}`;
+      squashedCount++;
+      updateCounterUI();
 
-      if (remainingRoaches <= 0) {
+      if (squashedCount >= TARGET_ROACHES) {
         finishTask();
       }
     }
 
+    function updateCounterUI() {
+      document.getElementById('roachCounter').innerText = `APLASTADAS: ${squashedCount} / ${TARGET_ROACHES}`;
+    }
+
     async function finishTask() {
       isTaskDone = true;
-      if (animTimer) clearInterval(animTimer);
+      if (loopTimer) clearInterval(loopTimer);
       document.getElementById('status').innerText = '¡COCINA DESINFECTADA!';
       document.getElementById('status').style.color = '#22c55e';
       playBeep(880, 'sine', 0.4);
