@@ -37,11 +37,11 @@
     }
     .overlay-input {
       padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
-      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+      color: #fff; width: 85%; max-width: 260px; text-align: center; font-size: 1rem; margin-bottom: 0.8rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ef4444; color: #fff;
-      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+      margin-top: 0.5rem; padding: 0.8rem 1.8rem; background: #ef4444; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1rem;
     }
     .btn-retry {
       margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
@@ -88,6 +88,45 @@
       background: linear-gradient(90deg, #10b981, #22c55e);
       box-shadow: 0 0 10px #22c55e;
       transition: width 0.3s ease;
+    }
+
+    /* Desglose individual de tareas */
+    .task-details-toggle {
+      background: #2b0b12;
+      border: 1px solid #450a0a;
+      border-radius: 6px;
+      color: #fca5a5;
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 0.4rem 0.6rem;
+      width: 100%;
+      margin-top: 0.6rem;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .task-breakdown-list {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 0.6rem;
+    }
+    .task-breakdown-item {
+      background: #0d0406;
+      border: 1px solid #29080e;
+      border-radius: 6px;
+      padding: 0.4rem 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+    }
+    .task-breakdown-count {
+      font-weight: 900;
+      color: #22c55e;
+      font-family: monospace;
+      font-size: 0.8rem;
     }
 
     /* Botones de sabotaje */
@@ -161,10 +200,10 @@
 </head>
 <body>
 
-  <!-- Overlay para control de acceso (1 impostor simultáneo) -->
+  <!-- Overlay para control de acceso y número de tripulantes -->
   <div id="overlay">
-    <h2 id="ovTitle" style="color: #ef4444;">TERMINAL DEL IMPOSTOR</h2>
-    <p id="ovDesc">Escribe tu nombre para tomar el control</p>
+    <h2 id="ovTitle" style="color: #ef4444; margin-bottom: 0.3rem;">TERMINAL DEL IMPOSTOR</h2>
+    <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y configuración de la partida</p>
     
     <div id="busyAlert" class="busy-box">
       <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
@@ -173,6 +212,7 @@
     </div>
 
     <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <input id="crewCountInput" class="overlay-input" type="number" min="1" max="20" placeholder="Nº de tripulantes (ej: 4)" autocomplete="off" />
     <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Acceder</button>
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar de nuevo</button>
   </div>
@@ -183,7 +223,7 @@
       <p class="subtitle">Canal encubierto de interferencia y sabotaje</p>
     </div>
 
-    <!-- Progreso de Tareas Global -->
+    <!-- Progreso de Tareas Global con desglose individual X/Y -->
     <div class="card">
       <div class="card-title">
         <span>PROGRESO DE TRIPULACIÓN</span>
@@ -193,6 +233,15 @@
         <div class="progress-fill" id="progressBar"></div>
       </div>
       <div id="tasksCount" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.4rem;">Cargando tareas...</div>
+
+      <!-- Botón para ver/ocultar el detalle X/Y por tarea -->
+      <button class="task-details-toggle" onclick="toggleTaskBreakdown()">
+        <span>📊 Ver desglose por tarea</span>
+        <span id="breakdownArrow">▼</span>
+      </button>
+
+      <!-- Lista de tareas X/Y -->
+      <div class="task-breakdown-list" id="taskBreakdownGrid"></div>
     </div>
 
     <!-- Botones de Sabotaje con Cooldowns específicos -->
@@ -238,16 +287,16 @@
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentPlayer = '';
+    let totalCrewCount = 4; // Valor por defecto
     let heartbeatTimer = null;
+    let showBreakdown = false;
 
-    // Cooldowns específicos por sabotaje (en segundos)
     const COOLDOWNS = {
       luces: 35,
       fuga: 60,
       controles: 40
     };
 
-    // Registro local de cuándo se reparó o activó cada uno
     const lastFinishedTime = {
       luces: 0,
       fuga: 0,
@@ -269,22 +318,31 @@
 
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'TERMINAL DEL IMPOSTOR';
-      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para tomar el control';
+      document.getElementById('ovDesc').innerText = 'Identificación y configuración de la partida';
       document.getElementById('busyAlert').style.display = 'none';
-      const input = document.getElementById('playerName');
-      input.style.display = 'block';
-      input.value = '';
-      input.focus();
+      const inputName = document.getElementById('playerName');
+      const inputCount = document.getElementById('crewCountInput');
+      inputName.style.display = 'block';
+      inputCount.style.display = 'block';
+      inputName.value = '';
+      inputCount.value = '';
+      inputName.focus();
       document.getElementById('btnStart').style.display = 'block';
       document.getElementById('btnRetry').style.display = 'none';
     }
 
     async function checkPlayer() {
-      const input = document.getElementById('playerName');
-      const name = input.value.trim().toUpperCase();
+      const inputName = document.getElementById('playerName');
+      const inputCount = document.getElementById('crewCountInput');
+
+      const name = inputName.value.trim().toUpperCase();
+      const count = parseInt(inputCount.value.trim(), 10);
+
       if (!name) return alert('Escribe tu nombre');
+      if (isNaN(count) || count <= 0) return alert('Introduce un número de tripulantes válido (ej: 4)');
 
       currentPlayer = name;
+      totalCrewCount = count;
 
       const { data: session } = await client
         .from('active_sessions')
@@ -302,7 +360,8 @@
           document.getElementById('ovDesc').innerText = 'Ya hay un impostor conectado al terminal.';
           document.getElementById('busyAlert').style.display = 'block';
           document.getElementById('busyMsg').innerText = `${session.player_name} tiene la sesión abierta.`;
-          input.style.display = 'none';
+          inputName.style.display = 'none';
+          inputCount.style.display = 'none';
           document.getElementById('btnStart').style.display = 'none';
           document.getElementById('btnRetry').style.display = 'block';
           return;
@@ -313,7 +372,6 @@
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
 
-      // Iniciar bucles de datos y cooldowns
       pollData();
       setInterval(pollData, 2500);
       setInterval(updateCooldownUI, 1000);
@@ -337,13 +395,18 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
+    function toggleTaskBreakdown() {
+      showBreakdown = !showBreakdown;
+      document.getElementById('taskBreakdownGrid').style.display = showBreakdown ? 'grid' : 'none';
+      document.getElementById('breakdownArrow').innerText = showBreakdown ? '▲' : '▼';
+    }
+
     async function pollData() {
-      // 1. Cargar estado de sabotajes en Supabase
+      // 1. Sabotajes
       const { data: sabs } = await client.from('sabotages').select('*');
       if (sabs) {
         sabs.forEach(s => {
           const prev = currentSabotages[s.id];
-          // Si estaba activo y pasa a inactivo, se acaba de reparar: empieza su cooldown
           if (prev && prev.active && !s.active) {
             lastFinishedTime[s.id] = Date.now();
           }
@@ -351,19 +414,42 @@
         });
       }
 
-      // 2. Progreso global
+      // 2. Progreso global y cálculo por tarea X/Y
       const { data: doneTasks } = await client.from('completed_tasks').select('*');
       if (doneTasks) {
-        const count = doneTasks.length;
-        const percent = Math.min(100, Math.round((count / (ALL_TASKS.length * 2)) * 100));
-        document.getElementById('progressBar').style.width = `${percent}%`;
-        document.getElementById('progressText').innerText = `${percent}%`;
-        document.getElementById('tasksCount').innerText = `${count} tareas completadas en total`;
+        const totalMaxTasks = totalCrewCount * ALL_TASKS.length;
+        const totalCompleted = doneTasks.length;
+
+        const globalPercent = Math.min(100, Math.round((totalCompleted / totalMaxTasks) * 100));
+        document.getElementById('progressBar').style.width = `${globalPercent}%`;
+        document.getElementById('progressText').innerText = `${globalPercent}%`;
+        document.getElementById('tasksCount').innerText = `${totalCompleted}/${totalMaxTasks} tareas completadas en total (${totalCrewCount} tripulantes)`;
+
+        renderTaskBreakdown(doneTasks);
       }
 
-      // 3. Radar de ocupación
+      // 3. Radar
       const { data: sessions } = await client.from('active_sessions').select('*');
       renderRadar(sessions || []);
+    }
+
+    function renderTaskBreakdown(doneTasks) {
+      const grid = document.getElementById('taskBreakdownGrid');
+      grid.innerHTML = '';
+
+      ALL_TASKS.forEach(t => {
+        // Contar tripulantes distintos que completaron esta tarea concreta
+        const completedThisTask = doneTasks.filter(item => item.task_name === t.id);
+        const uniquePlayers = new Set(completedThisTask.map(i => i.player_name)).size;
+
+        const el = document.createElement('div');
+        el.className = 'task-breakdown-item';
+        el.innerHTML = `
+          <span>${t.name}</span>
+          <span class="task-breakdown-count">${uniquePlayers}/${totalCrewCount}</span>
+        `;
+        grid.appendChild(el);
+      });
     }
 
     function updateCooldownUI() {
@@ -392,7 +478,6 @@
       const elapsed = Math.floor((now - lastFinishedTime[sabId]) / 1000);
       const remaining = maxCd - elapsed;
 
-      // 1. Si este sabotaje concreto está activo
       if (info && info.active) {
         btn.classList.add('active-now');
         btn.disabled = false;
@@ -402,21 +487,18 @@
 
       btn.classList.remove('active-now');
 
-      // 2. Si hay otro sabotaje activo distinto, queda bloqueado
       if (anyActive) {
         btn.disabled = true;
         badge.innerText = 'BLOQUEADO';
         return;
       }
 
-      // 3. Si está en su tiempo de enfriamiento tras repararse
       if (lastFinishedTime[sabId] > 0 && remaining > 0) {
         btn.disabled = true;
         badge.innerText = `${remaining}s`;
         return;
       }
 
-      // 4. Completamente disponible
       btn.disabled = false;
       badge.innerText = 'LISTO';
     }
