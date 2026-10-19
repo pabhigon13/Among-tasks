@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Cocina: Control de Plagas</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #0f0a06;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #d97706; letter-spacing: 2px; font-size: 1.3rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Estructura de la pantalla */
+    .kitchen-frame {
+      position: relative;
+      background: #1c130b;
+      border: 4px solid #78350f;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 360px;
+      height: 480px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.85), 0 12px 30px rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Cabecera del contador */
+    .kitchen-header {
+      background: #2a180b;
+      border-bottom: 2px solid #451a03;
+      padding: 0.6rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+    .header-label {
+      font-size: 0.8rem;
+      font-weight: 900;
+      color: #fed7aa;
+      letter-spacing: 1px;
+    }
+    .counter-display {
+      font-family: "Courier New", monospace;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #fbbf24;
+      background: #120904;
+      border: 1px solid #78350f;
+      padding: 2px 10px;
+      border-radius: 6px;
+      letter-spacing: 2px;
+    }
+
+    /* Suelo de baldosas de cocina */
+    .kitchen-floor {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background-color: #271a10;
+      background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.45) 2px, transparent 2px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.45) 2px, transparent 2px);
+      background-size: 40px 40px;
+      box-shadow: inset 0 0 40px rgba(0,0,0,0.8);
+      cursor: crosshair;
+    }
+
+    /* Cucaracha viva */
+    .cockroach {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      font-size: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transform: translate(-50%, -50%);
+      cursor: pointer;
+      z-index: 5;
+      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.8));
+      transition: opacity 0.2s ease-out;
+    }
+
+    /* Mancha / aplastamiento */
+    .splat {
+      position: absolute;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #78350f 40%, rgba(69, 26, 3, 0.6) 80%, transparent 100%);
+      transform: translate(-50%, -50%) scale(1.2);
+      pointer-events: none;
+      z-index: 3;
+      opacity: 0.8;
+      transition: opacity 1.5s ease-out;
+    }
+
+    #status {
+      margin-top: 0.8rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    /* Capa de inicio y bloqueo */
+    #overlay {
+      position: fixed; inset: 0; background: #0f0a06; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #b45309; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #d97706;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>CUCARACHAS</h2>
+  <p>Pisa las cucarachas que cruzan la cocina hasta eliminarlas</p>
+
+  <div class="kitchen-frame">
+    <div class="kitchen-header">
+      <span class="header-label">PLAGA RESTANTE</span>
+      <span class="counter-display" id="killCounter">0/20</span>
+    </div>
+
+    <!-- Suelo interactivo -->
+    <div class="kitchen-floor" id="floorArea"></div>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const TASK_ID = 'cucarachas';
+    const GOAL_KILLS = 20;
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    let kills = 0;
+    let isGameOver = false;
+    let bugs = [];
+    let spawnTimer = null;
+    let animFrame = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#d97706';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      const { data: doneData } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', TASK_ID);
+
+      if (doneData && doneData.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+        return;
+      }
+
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está limpiando la cocina ahora mismo.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+      startGame();
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Motor de Cucarachas
+    const floorArea = document.getElementById('floorArea');
+    const killCounter = document.getElementById('killCounter');
+
+    function startGame() {
+      kills = 0;
+      isGameOver = false;
+      bugs = [];
+      updateCounter();
+
+      document.querySelectorAll('.cockroach, .splat').forEach(e => e.remove());
+
+      // Aparecen cucarachas periódicamente
+      spawnTimer = setInterval(spawnBug, 500);
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function spawnBug() {
+      if (isGameOver) return;
+      if (bugs.length >= 6) return; // Máximo 6 activas en pantalla
+
+      const rect = floorArea.getBoundingClientRect();
+
+      // Elegir un borde aleatorio para nacer (0=Arriba, 1=Abajo, 2=Izquierda, 3=Derecha)
+      const side = Math.floor(Math.random() * 4);
+      let startX = 0, startY = 0;
+      let targetX = 0, targetY = 0;
+
+      if (side === 0) { // Arriba
+        startX = Math.random() * rect.width;
+        startY = -25;
+        targetX = Math.random() * rect.width;
+        targetY = rect.height + 25;
+      } else if (side === 1) { // Abajo
+        startX = Math.random() * rect.width;
+        startY = rect.height + 25;
+        targetX = Math.random() * rect.width;
+        targetY = -25;
+      } else if (side === 2) { // Izquierda
+        startX = -25;
+        startY = Math.random() * rect.height;
+        targetX = rect.width + 25;
+        targetY = Math.random() * rect.height;
+      } else { // Derecha
+        startX = rect.width + 25;
+        startY = Math.random() * rect.height;
+        targetX = -25;
+        targetY = Math.random() * rect.height;
+      }
+
+      // Calcular vector de movimiento
+      const dx = targetX - startX;
+      const dy = targetY - startY;
+      const dist = Math.hypot(dx, dy);
+      const speed = Math.random() * 1.5 + 2.2;
+
+      // Ángulo de rotación de la cucaracha hacia donde camina
+      const angleRad = Math.atan2(dy, dx);
+      const angleDeg = (angleRad * 180 / Math.PI) + 90; // +90 para alinear cabeza
+
+      const el = document.createElement('div');
+      el.className = 'cockroach';
+      el.innerText = '🪳';
+      el.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
+      floorArea.appendChild(el);
+
+      const bug = {
+        el: el,
+        x: startX,
+        y: startY,
+        vx: (dx / dist) * speed,
+        vy: (dy / dist) * speed,
+        angle: angleDeg,
+        alive: true
+      };
+
+      // Al pulsar sobre ella: aplastar
+      el.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        squashBug(bug);
+      });
+
+      bugs.push(bug);
+    }
+
+    function squashBug(bug) {
+      if (!bug.alive || isGameOver) return;
+      bug.alive = false;
+
+      // Sonido de aplastamiento
+      playBeep(220, 'triangle', 0.15);
+      if (navigator.vibrate) navigator.vibrate(50);
+
+      // Crear mancha en el suelo
+      const splat = document.createElement('div');
+      splat.className = 'splat';
+      splat.style.left = `${bug.x}px`;
+      splat.style.top = `${bug.y}px`;
+      floorArea.appendChild(splat);
+      setTimeout(() => splat.style.opacity = '0.2', 600);
+
+      // Eliminar elemento de la cucaracha
+      bug.el.remove();
+      bugs = bugs.filter(b => b !== bug);
+
+      kills++;
+      updateCounter();
+
+      if (kills >= GOAL_KILLS) {
+        finishGame();
+      }
+    }
+
+    function gameLoop() {
+      if (isGameOver) return;
+      const rect = floorArea.getBoundingClientRect();
+
+      for (let i = bugs.length - 1; i >= 0; i--) {
+        const bug = bugs[i];
+        if (!bug.alive) continue;
+
+        bug.x += bug.vx;
+        bug.y += bug.vy;
+
+        bug.el.style.left = `${bug.x}px`;
+        bug.el.style.top = `${bug.y}px`;
+
+        // Si sale de los márgenes por completo, se retira
+        if (bug.x < -40 || bug.x > rect.width + 40 || bug.y < -40 || bug.y > rect.height + 40) {
+          bug.el.remove();
+          bugs.splice(i, 1);
+        }
+      }
+
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function updateCounter() {
+      killCounter.innerText = `${kills}/${GOAL_KILLS}`;
+    }
+
+    async function finishGame() {
+      isGameOver = true;
+      clearInterval(spawnTimer);
+      cancelAnimationFrame(animFrame);
+
+      document.querySelectorAll('.cockroach').forEach(b => b.remove());
+
+      document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+      playBeep(880, 'sine', 0.4);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+      await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+      await releaseSession();
+    }
+  </script>
+</body>
+</html>
