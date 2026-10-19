@@ -242,7 +242,7 @@
     <div class="simon-pad pad-3" id="pad-3" onclick="handlePadClick(3)"></div>
   </div>
 
-  <div class="step-counter" id="stepCounter">RONDA 1 / 4</div>
+  <div class="step-counter" id="stepCounter">RONDA 1 / 5</div>
   <div id="status"></div>
 
   <script>
@@ -254,7 +254,7 @@
     let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
 
-    const TARGET_ROUNDS = 4;
+    const TARGET_ROUNDS = 5;
     let sequence = [];
     let playerSequence = [];
     let currentRound = 1;
@@ -495,6 +495,7 @@
       if (playerSequence.length === currentRound) {
         if (currentRound === TARGET_ROUNDS) {
           isTaskDone = true;
+          document.getElementById('stepCounter').innerText = `COMPLETADO (${TARGET_ROUNDS} / ${TARGET_ROUNDS})`;
           document.getElementById('status').innerText = '¡REACTOR CALIBRADO!';
           document.getElementById('status').style.color = '#22c55e';
           playBeep(880, 'sine', 0.4);
