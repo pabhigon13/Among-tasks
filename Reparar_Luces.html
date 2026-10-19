@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Reparación: Red Eléctrica</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    body {
+      background: #08090d;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #facc15; font-size: 1.4rem; letter-spacing: 2px; }
+    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Mueble del cuadro de fusibles */
+    .fuse-panel {
+      background: #181d26;
+      border: 4px solid #334155;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 360px;
+      padding: 1.2rem 0.8rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    /* Pantalla superior de estado */
+    .status-screen {
+      background: #090c10;
+      border: 2px solid #1e293b;
+      border-radius: 10px;
+      padding: 0.8rem;
+      font-family: "Courier New", monospace;
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-size: 0.95rem;
+    }
+    .status-screen.danger {
+      color: #ef4444;
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+      animation: alertBlink 1s infinite alternate;
+    }
+    .status-screen.ok {
+      color: #22c55e;
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+    @keyframes alertBlink {
+      from { box-shadow: 0 0 4px #ef4444; }
+      to { box-shadow: 0 0 16px #ef4444; }
+    }
+
+    /* Filas de interruptores */
+    .switches-grid {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #0d1117;
+      border: 2px solid #1e293b;
+      border-radius: 12px;
+      padding: 1.2rem 0.4rem;
+    }
+
+    .switch-column {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Piloto indicador */
+    .indicator-light {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #450a0a;
+      border: 2px solid #1f2937;
+      transition: all 0.2s;
+    }
+    .indicator-light.active {
+      background: #22c55e;
+      box-shadow: 0 0 12px #22c55e;
+      border-color: #86efac;
+    }
+
+    /* Interruptor vertical */
+    .toggle-slot {
+      width: 44px;
+      height: 94px;
+      background: #05070a;
+      border: 3px solid #1e293b;
+      border-radius: 8px;
+      position: relative;
+      cursor: pointer;
+      box-shadow: inset 0 0 8px #000;
+    }
+    .toggle-handle {
+      position: absolute;
+      left: 3px;
+      width: 32px;
+      height: 40px;
+      background: linear-gradient(180deg, #94a3b8 0%, #475569 100%);
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.6);
+      transition: top 0.12s ease-out;
+    }
+    /* Posición abajo (apagado/fallo) vs arriba (conectado) */
+    .toggle-slot.state-up .toggle-handle {
+      top: 4px;
+      background: linear-gradient(180deg, #facc15 0%, #ca8a04 100%);
+      border-color: #fef08a;
+    }
+    .toggle-slot.state-down .toggle-handle {
+      top: 44px;
+      background: linear-gradient(180deg, #64748b 0%, #334155 100%);
+    }
+
+    .switch-id {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #64748b;
+      font-family: monospace;
+    }
+
+    /* Overlay inicio/identificación */
+    #overlay {
+      position: fixed; inset: 0; background: #08090d; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #eab308; color: #000;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay para registrar quién arregla -->
+  <div id="overlay">
+    <h2 style="color: #facc15;">TERMINAL DE FUSIBLES</h2>
+    <p>Escribe tu nombre para manipular el cuadro</p>
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button class="overlay-btn" onclick="startTerminal()">Acceder al Cuadro</button>
+  </div>
+
+  <h2>CUADRO ELÉCTRICO</h2>
+  <p>Sube todos los disyuntores para restaurar el fluido eléctrico</p>
+
+  <div class="fuse-panel">
+    <div id="screenStatus" class="status-screen danger">
+      COMPROBANDO ESTADO...
+    </div>
+
+    <div class="switches-grid">
+      <!-- Fusible 1 -->
+      <div class="switch-column">
+        <div id="light-0" class="indicator-light"></div>
+        <div id="switch-0" class="toggle-slot state-down" onclick="toggleSwitch(0)">
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="switch-id">F-1</span>
+      </div>
+
+      <!-- Fusible 2 -->
+      <div class="switch-column">
+        <div id="light-1" class="indicator-light"></div>
+        <div id="switch-1" class="toggle-slot state-down" onclick="toggleSwitch(1)">
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="switch-id">F-2</span>
+      </div>
+
+      <!-- Fusible 3 -->
+      <div class="switch-column">
+        <div id="light-2" class="indicator-light"></div>
+        <div id="switch-2" class="toggle-slot state-down" onclick="toggleSwitch(2)">
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="switch-id">F-3</span>
+      </div>
+
+      <!-- Fusible 4 -->
+      <div class="switch-column">
+        <div id="light-3" class="indicator-light"></div>
+        <div id="switch-3" class="toggle-slot state-down" onclick="toggleSwitch(3)">
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="switch-id">F-4</span>
+      </div>
+
+      <!-- Fusible 5 -->
+      <div class="switch-column">
+        <div id="light-4" class="indicator-light"></div>
+        <div id="switch-4" class="toggle-slot state-down" onclick="toggleSwitch(4)">
+          <div class="toggle-handle"></div>
+        </div>
+        <span class="switch-id">F-5</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let isSabotageActive = false;
+    let switchesState = [false, false, false, false, false]; // false = down, true = up
+    let isLocked = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.08) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function startTerminal() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+      currentPlayer = name;
+      document.getElementById('overlay').style.display = 'none';
+
+      checkSabotageStatus();
+      setInterval(checkSabotageStatus, 2000);
+    }
+
+    async function checkSabotageStatus() {
+      const { data: sab } = await client
+        .from('sabotages')
+        .select('*')
+        .eq('id', 'luces')
+        .maybeSingle();
+
+      const screen = document.getElementById('screenStatus');
+
+      if (!sab || !sab.active) {
+        isSabotageActive = false;
+        screen.className = 'status-screen ok';
+        screen.innerText = 'RED ELÉCTRICA ESTABLE';
+        // En reposo, todos encendidos arriba
+        switchesState = [true, true, true, true, true];
+        renderSwitches();
+      } else {
+        if (!isSabotageActive) {
+          // Acaba de activarse el sabotaje: descalibramos aleatoriamente
+          isSabotageActive = true;
+          screen.className = 'status-screen danger';
+          screen.innerText = '⚠️ CORTE DE ENERGÍA GENERAL ⚠️';
+          randomizeSwitches();
+        }
+      }
+    }
+
+    function randomizeSwitches() {
+      // Aseguramos que al menos 2 o 3 estén abajo
+      switchesState = [
+        Math.random() > 0.6,
+        false,
+        Math.random() > 0.5,
+        false,
+        Math.random() > 0.7
+      ];
+      renderSwitches();
+    }
+
+    function renderSwitches() {
+      for (let i = 0; i < 5; i++) {
+        const slot = document.getElementById(`switch-${i}`);
+        const light = document.getElementById(`light-${i}`);
+        const isUp = switchesState[i];
+
+        slot.className = `toggle-slot ${isUp ? 'state-up' : 'state-down'}`;
+        if (isUp) {
+          light.classList.add('active');
+        } else {
+          light.classList.remove('active');
+        }
+      }
+    }
+
+    async function toggleSwitch(index) {
+      if (isLocked || !isSabotageActive) return;
+
+      // Cambiar estado
+      switchesState[index] = !switchesState[index];
+      playBeep(switchesState[index] ? 520 : 320, 'square', 0.08);
+      if (navigator.vibrate) navigator.vibrate(30);
+
+      renderSwitches();
+
+      // Comprobar si todos los interruptores están hacia arriba
+      const allUp = switchesState.every(s => s === true);
+      if (allUp) {
+        isLocked = true;
+        playBeep(880, 'sine', 0.35);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 150]);
+
+        const screen = document.getElementById('screenStatus');
+        screen.className = 'status-screen ok';
+        screen.innerText = '¡ENERGÍA RESTABLECIDA!';
+
+        // Actualizar Supabase
+        await client.from('sabotages').upsert({
+          id: 'luces',
+          active: false,
+          fixed_by: currentPlayer
+        });
+
+        setTimeout(() => {
+          isLocked = false;
+        }, 1500);
+      }
+    }
+  </script>
+</body>
+</html>
