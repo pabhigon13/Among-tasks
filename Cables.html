@@ -63,6 +63,7 @@
     .overlay-input { padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430; color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem; }
     .overlay-btn { margin-top: 1rem; padding: 0.8rem 1.5rem; background: #2563eb; color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
     .btn-retry { margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff; border: none; border-radius: 6px; cursor: pointer; display: none; }
+    .busy-box { background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px; padding: 1rem; margin: 1rem; max-width: 300px; display: none; }
   </style>
 </head>
 <body>
@@ -70,6 +71,13 @@
   <div id="overlay">
     <h2 id="ovTitle">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
     <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
     <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
@@ -87,16 +95,19 @@
   <div id="status"></div>
 
   <script>
+    const TASK_ID = 'cables';
     const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentPlayer = '';
+    let heartbeatTimer = null;
 
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
       document.getElementById('ovTitle').style.color = '#f59e0b';
       document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      document.getElementById('busyAlert').style.display = 'none';
       const input = document.getElementById('playerName');
       input.style.display = 'block';
       input.value = '';
@@ -112,24 +123,77 @@
 
       currentPlayer = name;
 
-      const { data, error } = await client
+      // 1. Comprobar si ya la completó
+      const { data: doneData } = await client
         .from('completed_tasks')
         .select('*')
         .eq('player_name', currentPlayer)
-        .eq('task_name', 'cables');
+        .eq('task_name', TASK_ID);
 
-      if (data && data.length > 0) {
+      if (doneData && doneData.length > 0) {
         document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
         document.getElementById('ovTitle').style.color = '#ef4444';
         document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
         input.style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnRetry').style.display = 'block';
-      } else {
-        document.getElementById('overlay').style.display = 'none';
+        return;
+      }
+
+      // 2. Comprobar si el puesto está ocupado por otra persona (margen de 12 segundos)
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo. Espera a que termine.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      // 3. Tomar posesión del puesto
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+
+      // Enviar pulso cada 3 segundos para mantener la reserva activa
+      heartbeatTimer = setInterval(takeSession, 3000);
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
       }
     }
 
+    // Liberar si cierra o cambia de app
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Minijuego
     const COLORS = [
       { id: 'red', hex: '#ef4444', class: 'c-red' },
       { id: 'blue', hex: '#3b82f6', class: 'c-blue' },
@@ -232,7 +296,9 @@
         document.getElementById('status').innerText = "¡TAREA COMPLETADA!";
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: 'cables' }]);
+        // Registrar terminada y soltar puesto
+        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+        await releaseSession();
       }
     }
 
