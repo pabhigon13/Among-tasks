@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Almacén: Suministros en Cascada</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #0f070b;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #f43f5e; letter-spacing: 2px; font-size: 1.3rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Marco del juego */
+    .game-cabinet {
+      position: relative;
+      background: #180d14;
+      border: 4px solid #881337;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 360px;
+      height: 460px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Barra de progreso superior */
+    .progress-bar-container {
+      background: #2b0f19;
+      border-bottom: 2px solid #4c0519;
+      padding: 0.6rem 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      z-index: 5;
+    }
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: bold;
+      color: #fda4af;
+      letter-spacing: 1px;
+    }
+    .progress-track {
+      width: 100%;
+      height: 14px;
+      background: #0f0408;
+      border-radius: 7px;
+      border: 1px solid #4c0519;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #e11d48, #f43f5e);
+      box-shadow: 0 0 10px #f43f5e;
+      transition: width 0.15s ease-out;
+    }
+
+    /* Lienzo donde caen los objetos */
+    .game-area {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+      background: radial-gradient(circle at center, #1c0f17 0%, #0d060b 100%);
+    }
+
+    /* Cesta controlable */
+    #basket {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      width: 76px;
+      height: 48px;
+      transform: translateX(-50%);
+      z-index: 10;
+      pointer-events: none;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+    }
+
+    /* Objetos que caen */
+    .falling-item {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 4;
+    }
+    .item-label {
+      font-size: 0.55rem;
+      font-weight: 900;
+      color: #fff;
+      background: rgba(0,0,0,0.7);
+      padding: 1px 4px;
+      border-radius: 3px;
+      white-space: nowrap;
+      margin-top: -2px;
+    }
+
+    #status {
+      margin-top: 0.8rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    /* Capa de inicio y cola */
+    #overlay {
+      position: fixed; inset: 0; background: #0f070b; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #e11d48; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #f43f5e;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>CASCADA</h2>
+  <p>Recoge las botellas y evita tornillos, móviles y mandos</p>
+
+  <div class="game-cabinet">
+    <!-- Barra de progreso -->
+    <div class="progress-bar-container">
+      <div class="progress-header">
+        <span>PROVISIONES</span>
+        <span id="percentLabel">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <!-- Zona de caída -->
+    <div class="game-area" id="gameArea">
+      <!-- Cesta dibujada en SVG -->
+      <div id="basket">
+        <svg viewBox="0 0 100 60" width="100%" height="100%">
+          <path d="M 10 15 L 20 55 L 80 55 L 90 15 Z" fill="#9f1239" stroke="#fda4af" stroke-width="3" />
+          <line x1="20" y1="15" x2="30" y2="55" stroke="#4c0519" stroke-width="2" />
+          <line x1="50" y1="15" x2="50" y2="55" stroke="#4c0519" stroke-width="2" />
+          <line x1="80" y1="15" x2="70" y2="55" stroke="#4c0519" stroke-width="2" />
+          <line x1="12" y1="35" x2="88" y2="35" stroke="#4c0519" stroke-width="2" />
+          <ellipse cx="50" cy="15" rx="40" ry="7" fill="#be123c" stroke="#fda4af" stroke-width="3" />
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const TASK_ID = 'cascada';
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    // Catálogo de objetos
+    const ITEMS = [
+      // BUENOS (Bebidas)
+      { type: 'good', icon: '🦌', label: 'JÄGER' },
+      { type: 'good', icon: '🥃', label: 'RECOMPENSA' },
+      { type: 'good', icon: '🍸', label: 'VODKA' },
+      { type: 'good', icon: '🍺', label: 'CERVEZA' },
+
+      // MALOS (Basura/Chatarra)
+      { type: 'bad', icon: '🔩', label: 'TORNILLO' },
+      { type: 'bad', icon: '📱', label: 'MÓVIL' },
+      { type: 'bad', icon: '🎮', label: 'MANDO' },
+      { type: 'bad', icon: '🔋', label: 'PILA' }
+    ];
+
+    let progress = 0;
+    let isGameOver = false;
+    let fallingObjects = [];
+    let spawnTimer = null;
+    let animFrame = null;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.12) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#f43f5e';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      const { data: doneData } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', TASK_ID);
+
+      if (doneData && doneData.length > 0) {
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+        return;
+      }
+
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+      startGame();
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Motor del minijuego
+    const gameArea = document.getElementById('gameArea');
+    const basket = document.getElementById('basket');
+    const progressBar = document.getElementById('progressBar');
+    const percentLabel = document.getElementById('percentLabel');
+
+    let basketX = 180;
+
+    function startGame() {
+      progress = 0;
+      isGameOver = false;
+      fallingObjects = [];
+      updateProgress(0);
+
+      // Limpiar objetos previos si hubiera
+      document.querySelectorAll('.falling-item').forEach(el => el.remove());
+
+      // Controles táctiles / ratón en el eje X
+      gameArea.addEventListener('pointermove', onMove);
+      gameArea.addEventListener('pointerdown', onMove);
+
+      // Generar objetos cada 650ms
+      spawnTimer = setInterval(spawnItem, 650);
+
+      // Loop de render
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function onMove(e) {
+      if (isGameOver) return;
+      const rect = gameArea.getBoundingClientRect();
+      let x = e.clientX - rect.left;
+      x = Math.max(38, Math.min(rect.width - 38, x));
+      basketX = x;
+      basket.style.left = `${basketX}px`;
+    }
+
+    function spawnItem() {
+      if (isGameOver) return;
+      const rect = gameArea.getBoundingClientRect();
+      const def = ITEMS[Math.floor(Math.random() * ITEMS.length)];
+
+      const el = document.createElement('div');
+      el.className = 'falling-item';
+      el.innerHTML = `<span>${def.icon}</span><span class="item-label">${def.label}</span>`;
+      gameArea.appendChild(el);
+
+      const item = {
+        el: el,
+        type: def.type,
+        x: Math.random() * (rect.width - 60) + 30,
+        y: -30,
+        speed: Math.random() * 2 + 3.2 // Velocidad de caída
+      };
+
+      fallingObjects.push(item);
+    }
+
+    function gameLoop() {
+      if (isGameOver) return;
+
+      const rect = gameArea.getBoundingClientRect();
+      const basketTop = rect.height - 55;
+      const basketBottom = rect.height - 10;
+
+      for (let i = fallingObjects.length - 1; i >= 0; i--) {
+        const item = fallingObjects[i];
+        item.y += item.speed;
+        item.el.style.left = `${item.x}px`;
+        item.el.style.top = `${item.y}px`;
+
+        // Detección de colisión con la cesta
+        if (item.y >= basketTop && item.y <= basketBottom) {
+          if (Math.abs(item.x - basketX) < 42) {
+            // Capturado
+            if (item.type === 'good') {
+              playBeep(520, 'sine', 0.1);
+              updateProgress(progress + 15);
+            } else {
+              playBeep(160, 'sawtooth', 0.25);
+              if (navigator.vibrate) navigator.vibrate(150);
+              updateProgress(progress - 12);
+            }
+            item.el.remove();
+            fallingObjects.splice(i, 1);
+            continue;
+          }
+        }
+
+        // Sale por abajo sin atrapar
+        if (item.y > rect.height + 40) {
+          item.el.remove();
+          fallingObjects.splice(i, 1);
+        }
+      }
+
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    async function updateProgress(val) {
+      progress = Math.max(0, Math.min(100, val));
+      progressBar.style.width = `${progress}%`;
+      percentLabel.innerText = `${progress}%`;
+
+      if (progress >= 100 && !isGameOver) {
+        isGameOver = true;
+        clearInterval(spawnTimer);
+        cancelAnimationFrame(animFrame);
+
+        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+        playBeep(880, 'sine', 0.4);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+        await releaseSession();
+      }
+    }
+  </script>
+</body>
+</html>
