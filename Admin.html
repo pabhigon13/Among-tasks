@@ -8,27 +8,26 @@
   <style>
     body { background: #0b0d13; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; text-align: center; padding: 1.2rem; margin: 0; }
     h1 { color: #f59e0b; margin: 0 0 0.2rem 0; font-size: 1.8rem; letter-spacing: 2px; }
-    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem; }
+    .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 1.2rem; }
 
     .admin-container { max-width: 1150px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.2rem; }
 
-    /* Banner no invasivo de fin de partida en Admin */
-    #adminVictoryBanner {
+    #adminMeetingBox {
       display: none;
-      background: linear-gradient(90deg, #991b1b, #dc2626);
-      border: 2px solid #f87171;
-      border-radius: 10px;
-      padding: 0.8rem 1rem;
-      font-weight: 900;
-      font-size: 1.05rem;
-      letter-spacing: 1px;
-      color: #fff;
-      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
-      animation: bannerPulse 1.2s infinite alternate;
+      background: linear-gradient(90deg, #1e3a8a, #1d4ed8);
+      border: 3px solid #60a5fa; border-radius: 12px; padding: 1rem 1.4rem;
+      box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+      justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
     }
-    @keyframes bannerPulse {
-      from { opacity: 0.9; }
-      to { opacity: 1; transform: scale(1.01); }
+    .btn-end-meeting {
+      background: #facc15; color: #000; border: none; padding: 0.8rem 1.5rem;
+      border-radius: 8px; font-weight: 900; font-size: 1rem; cursor: pointer;
+    }
+
+    #adminVictoryBanner {
+      display: none; background: linear-gradient(90deg, #991b1b, #dc2626);
+      border: 2px solid #f87171; border-radius: 10px; padding: 0.8rem 1rem;
+      font-weight: 900; font-size: 1.05rem; letter-spacing: 1px; color: #fff;
     }
 
     .overview-card {
@@ -54,22 +53,18 @@
       background: #1c0a0f; border: 2px solid #7f1d1d; border-radius: 14px; padding: 1.2rem;
       box-shadow: 0 0 25px rgba(239, 68, 68, 0.15); text-align: left;
     }
-    .monitor-title { font-size: 1.1rem; font-weight: 900; color: #f87171; letter-spacing: 1px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+    .monitor-title { font-size: 1.1rem; font-weight: 900; color: #f87171; letter-spacing: 1px; margin-bottom: 1rem; display: flex; justify-content: space-between; }
 
     .sabotage-deck { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 1.2rem; }
     .sabotage-pill {
       background: #0d0305; border: 2px solid #3f1118; border-radius: 10px; padding: 0.8rem;
       display: flex; justify-content: space-between; align-items: center;
     }
-    .sabotage-pill.active {
-      border-color: #facc15; background: rgba(234, 179, 8, 0.15);
-      animation: alertPulse 1s infinite alternate;
-    }
+    .sabotage-pill.active { border-color: #facc15; background: rgba(234, 179, 8, 0.15); }
     .btn-stop-sab {
       background: #ef4444; color: #fff; border: none; padding: 0.3rem 0.6rem; border-radius: 6px;
       font-size: 0.7rem; font-weight: bold; cursor: pointer;
     }
-    @keyframes alertPulse { from { box-shadow: 0 0 4px #facc15; } to { box-shadow: 0 0 14px #facc15; } }
 
     .radar-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
     .radar-tile {
@@ -87,13 +82,12 @@
     ul { list-style: none; padding: 0; margin: 0.8rem 0; max-height: 120px; overflow-y: auto; }
     li {
       background: #242c3d; margin-bottom: 0.35rem; padding: 0.45rem 0.7rem; border-radius: 6px;
-      display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;
+      display: flex; justify-content: space-between; font-size: 0.85rem;
     }
     .btn-reset {
       background: #ef4444; color: white; border: none; padding: 0.6rem; border-radius: 8px;
-      font-weight: bold; cursor: pointer; width: 100%; font-size: 0.85rem;
+      font-weight: bold; cursor: pointer; width: 100%;
     }
-    .btn-reset:active { background: #b91c1c; }
     .btn-all {
       background: #dc2626; color: white; border: none; padding: 1rem 2.2rem; border-radius: 10px;
       font-weight: 900; font-size: 1.1rem; cursor: pointer; margin-top: 1rem;
@@ -107,12 +101,18 @@
 
   <div class="admin-container">
 
-    <!-- Banner informativo discreto cuando el gas llega a 0 -->
+    <div id="adminMeetingBox">
+      <div style="text-align: left;">
+        <div style="font-size: 1.2rem; font-weight: 900; color: #facc15;">🚨 ¡REUNIÓN DE EMERGENCIA EN CURSO!</div>
+        <div id="adminMeetingText" style="font-size: 0.85rem; color: #cbd5e1; margin-top: 2px;">Esperando debate...</div>
+      </div>
+      <button class="btn-end-meeting" onclick="finishMeeting()">FINALIZAR REUNIÓN</button>
+    </div>
+
     <div id="adminVictoryBanner">
       ☠️ FIN DE PARTIDA: VICTORIA DEL IMPOSTOR (FUGA DE GAS NO SELLADA)
     </div>
 
-    <!-- Progreso Global -->
     <div class="overview-card">
       <div class="overview-header">
         <div>
@@ -130,7 +130,6 @@
       </div>
     </div>
 
-    <!-- Monitor del Impostor -->
     <div class="impostor-monitor">
       <div class="monitor-title">
         <span>🕵️ RADAR Y MONITOR DEL IMPOSTOR</span>
@@ -168,7 +167,6 @@
       <div class="radar-grid" id="adminRadarGrid"></div>
     </div>
 
-    <!-- Tareas -->
     <div class="tasks-grid">
       <div class="card">
         <h2 style="margin: 0; color: #f59e0b; font-size: 1.05rem;">⚡ Cables</h2>
@@ -229,9 +227,7 @@
 
     <div>
       <button class="btn-all" onclick="resetAll()">REINICIAR TODA LA PARTIDA</button>
-      <div style="font-size: 0.8rem; color: #22c55e; margin-top: 0.8rem;">Conectado a Supabase en tiempo real</div>
     </div>
-
   </div>
 
   <script>
@@ -242,14 +238,14 @@
     let crewCount = 4;
 
     const ALL_TASKS = [
-      { id: 'cables', name: '⚡ Cables', countId: 'countCables', listId: 'listCables' },
-      { id: 'numeros', name: '🔢 Números', countId: 'countNumeros', listId: 'listNumeros' },
-      { id: 'simon', name: '🧠 Simon', countId: 'countSimon', listId: 'listSimon' },
-      { id: 'conduccion', name: '🚗 Conducción', countId: 'countCond', listId: 'listCond' },
-      { id: 'dni', name: '🪪 DNI', countId: 'countDni', listId: 'listDni' },
-      { id: 'operacion', name: '🧮 Operación', countId: 'countOp', listId: 'listOp' },
-      { id: 'cascada', name: '🍻 Cascada', countId: 'countCascada', listId: 'listCascada' },
-      { id: 'cucarachas', name: '🪳 Cucarachas', countId: 'countCucarachas', listId: 'listCucarachas' }
+      { id: 'cables', countId: 'countCables', listId: 'listCables' },
+      { id: 'numeros', countId: 'countNumeros', listId: 'listNumeros' },
+      { id: 'simon', countId: 'countSimon', listId: 'listSimon' },
+      { id: 'conduccion', countId: 'countCond', listId: 'listCond' },
+      { id: 'dni', countId: 'countDni', listId: 'listDni' },
+      { id: 'operacion', countId: 'countOp', listId: 'listOp' },
+      { id: 'cascada', countId: 'countCascada', listId: 'listCascada' },
+      { id: 'cucarachas', countId: 'countCucarachas', listId: 'listCucarachas' }
     ];
 
     async function saveCrewCount() {
@@ -266,22 +262,24 @@
       if (settings && settings.crew_count) {
         crewCount = settings.crew_count;
         const input = document.getElementById('adminCrewCount');
-        if (document.activeElement !== input) {
-          input.value = crewCount;
-        }
+        if (document.activeElement !== input) input.value = crewCount;
+      }
+
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetingBox = document.getElementById('adminMeetingBox');
+      if (meeting && meeting.active) {
+        meetingBox.style.display = 'flex';
+        document.getElementById('adminMeetingText').innerText = `Cadáver reportado por: ${meeting.reported_by}. Todos los jugadores están convocados.`;
+      } else {
+        meetingBox.style.display = 'none';
       }
 
       const { data: doneData } = await client.from('completed_tasks').select('*').order('completed_at', { ascending: false });
-
       if (doneData) {
-        ALL_TASKS.forEach(t => {
-          renderTask(doneData.filter(i => i.task_name === t.id), t.countId, t.listId);
-        });
-
+        ALL_TASKS.forEach(t => renderTask(doneData.filter(i => i.task_name === t.id), t.countId, t.listId));
         const totalTasksPossible = crewCount * ALL_TASKS.length;
         const totalCompleted = doneData.length;
         const percent = Math.min(100, Math.round((totalCompleted / totalTasksPossible) * 100));
-
         document.getElementById('adminProgressBar').style.width = `${percent}%`;
         document.getElementById('percentBadge').innerText = `${percent}%`;
         document.getElementById('tasksSummaryText').innerText = `${totalCompleted}/${totalTasksPossible} tareas completadas (${crewCount} tripulantes)`;
@@ -320,7 +318,7 @@
       if (impSession) {
         const diff = (now - new Date(impSession.last_heartbeat).getTime()) / 1000;
         if (diff < 12) {
-          badge.innerText = `🔴 Impostor conectado: ${impSession.player_name}`;
+          badge.innerText = `🔴 Impostor conectado: ${impSession.player_name.split(':::')[0]}`;
           badge.style.color = '#ef4444';
         } else {
           badge.innerText = '⚪ Impostor desconectado';
@@ -335,23 +333,13 @@
         const sess = sessions.find(s => s.task_name === t.id);
         let busy = false;
         let player = '';
-
         if (sess) {
           const diff = (now - new Date(sess.last_heartbeat).getTime()) / 1000;
-          if (diff < 12) {
-            busy = true;
-            player = sess.player_name;
-          }
+          if (diff < 12) { busy = true; player = sess.player_name; }
         }
-
         const el = document.createElement('div');
         el.className = `radar-tile ${busy ? 'busy' : ''}`;
-        el.innerHTML = `
-          <strong>${t.name}</strong>
-          <span style="color:${busy ? '#ef4444' : '#22c55e'}; font-weight:bold;">
-            ${busy ? player : 'Libre'}
-          </span>
-        `;
+        el.innerHTML = `<strong>${t.id.toUpperCase()}</strong><span style="color:${busy ? '#ef4444' : '#22c55e'}; font-weight:bold;">${busy ? player : 'Libre'}</span>`;
         grid.appendChild(el);
       });
     }
@@ -367,20 +355,13 @@
       const pill = document.getElementById('pillFuga');
       const label = document.getElementById('statusFuga');
       const banner = document.getElementById('adminVictoryBanner');
-
       if (sab && sab.active) {
         pill.classList.add('active');
         const elapsed = Math.floor((Date.now() - new Date(sab.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
-
         label.innerText = `⚠️ ACTIVO (${remaining}s)`;
         label.style.color = '#ef4444';
-
-        if (remaining === 0) {
-          banner.style.display = 'block';
-        } else {
-          banner.style.display = 'none';
-        }
+        banner.style.display = remaining === 0 ? 'block' : 'none';
       } else {
         pill.classList.remove('active');
         label.innerText = 'Normal';
@@ -393,7 +374,6 @@
       const sab = sabs.find(s => s.id === id);
       const pill = document.getElementById(pillId);
       const label = document.getElementById(statusId);
-
       if (sab && sab.active) {
         pill.classList.add('active');
         label.innerText = '⚠️ ACTIVO';
@@ -405,12 +385,14 @@
       }
     }
 
+    async function finishMeeting() {
+      if (!confirm('¿Finalizar reunión y permitir que los jugadores vuelvan a las tareas?')) return;
+      await client.from('game_meetings').upsert({ id: 'current', active: false, reported_by: null });
+      loadAll();
+    }
+
     async function forceFixSabotage(sabId) {
-      await client.from('sabotages').upsert({
-        id: sabId,
-        active: false,
-        fixed_by: 'ADMIN'
-      });
+      await client.from('sabotages').upsert({ id: sabId, active: false, fixed_by: 'ADMIN' });
       loadAll();
     }
 
@@ -421,9 +403,10 @@
     }
 
     async function resetAll() {
-      if (!confirm('¿Reiniciar TODA la partida (tareas y sabotajes)?')) return;
+      if (!confirm('¿Reiniciar TODA la partida?')) return;
       await client.from('completed_tasks').delete().neq('id', 0);
       await client.from('sabotages').update({ active: false }).neq('id', '');
+      await client.from('game_meetings').upsert({ id: 'current', active: false, reported_by: null });
       loadAll();
     }
 
