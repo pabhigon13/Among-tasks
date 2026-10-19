@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Reparación: Válvula de Gas A</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+    body {
+      background: #0d0608;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0.8rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #ef4444; font-size: 1.3rem; letter-spacing: 2px; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    .terminal-cabinet {
+      background: #180a0e;
+      border: 4px solid #7f1d1d;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 350px;
+      padding: 1rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .countdown-bar {
+      background: #2b0b12;
+      border: 2px solid #ef4444;
+      border-radius: 10px;
+      padding: 0.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: #ef4444;
+    }
+    .countdown-bar.safe {
+      border-color: #22c55e;
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    /* Pantalla con el post-it del código y visor */
+    .screen-code {
+      background: #080204;
+      border: 2px solid #3f1118;
+      border-radius: 12px;
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .postit {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-weight: 900;
+      font-family: monospace;
+      font-size: 1.1rem;
+      letter-spacing: 3px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+    }
+    .code-input-display {
+      font-family: monospace;
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: #f87171;
+      letter-spacing: 8px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+    }
+
+    .valve-status-badge {
+      font-size: 0.75rem;
+      font-weight: bold;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .status-pending { background: #7f1d1d; color: #fca5a5; }
+    .status-ok { background: #14532d; color: #86efac; }
+
+    /* Teclado numérico */
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .key-btn {
+      aspect-ratio: 1.35;
+      background: #250f15;
+      border: 2px solid #551421;
+      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 1.4rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 3px 0 #120407;
+    }
+    .key-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #120407;
+      background: #3b141e;
+    }
+    .key-btn.btn-del { background: #3a1c0d; border-color: #7c2d12; color: #fdba74; }
+    .key-btn.btn-enter { background: #14532d; border-color: #16a34a; color: #86efac; }
+
+    #overlay {
+      position: fixed; inset: 0; background: #0d0608; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ef4444; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay -->
+  <div id="overlay">
+    <h2 style="color: #ef4444;">VÁLVULA DE GAS A</h2>
+    <p>Escribe tu nombre para operar la consola</p>
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button class="overlay-btn" onclick="startTerminal()">Entrar a la Terminal</button>
+  </div>
+
+  <h2>VÁLVULA DE GAS A (FILTRO)</h2>
+  <p>Introduce la clave para sellar el primer conducto</p>
+
+  <div class="terminal-cabinet">
+    <div id="countdownBox" class="countdown-bar safe">
+      <span id="gasStateText">SISTEMA SEGURO</span>
+      <span id="timerText">--</span>
+    </div>
+
+    <div class="screen-code">
+      <div style="font-size: 0.72rem; color: #94a3b8;">CÓDIGO DE PURGA ASIGNADO:</div>
+      <div class="postit" id="postitCode">58319</div>
+      <div class="code-input-display" id="codeDisplay">_____</div>
+      <div id="valveBadge" class="valve-status-badge status-pending">PENDIENTE DE PURGA</div>
+    </div>
+
+    <!-- Teclado -->
+    <div class="keypad">
+      <button class="key-btn" onclick="pressDigit(1)">1</button>
+      <button class="key-btn" onclick="pressDigit(2)">2</button>
+      <button class="key-btn" onclick="pressDigit(3)">3</button>
+
+      <button class="key-btn" onclick="pressDigit(4)">4</button>
+      <button class="key-btn" onclick="pressDigit(5)">5</button>
+      <button class="key-btn" onclick="pressDigit(6)">6</button>
+
+      <button class="key-btn" onclick="pressDigit(7)">7</button>
+      <button class="key-btn" onclick="pressDigit(8)">8</button>
+      <button class="key-btn" onclick="pressDigit(9)">9</button>
+
+      <button class="key-btn btn-del" onclick="deleteDigit()">⌫</button>
+      <button class="key-btn" onclick="pressDigit(0)">0</button>
+      <button class="key-btn btn-enter" onclick="submitCode()">↵</button>
+    </div>
+  </div>
+
+  <div id="statusMsg" style="margin-top: 0.8rem; font-weight: bold; min-height: 1.5rem;"></div>
+
+  <script>
+    const VALVE_ID = 'valvula_1';
+    const OTHER_VALVE_ID = 'valvula_2';
+    const SECRET_CODE = '58319'; // Código fijo para esta válvula
+    const TIMEOUT_LIMIT = 45; // 45 segundos para resolver
+
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let enteredCode = '';
+    let isSabotageActive = false;
+    let thisValvePurged = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function startTerminal() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+      currentPlayer = name;
+      document.getElementById('overlay').style.display = 'none';
+
+      pollSabotage();
+      setInterval(pollSabotage, 1500);
+    }
+
+    async function pollSabotage() {
+      // 1. Consultar sabotaje global
+      const { data: sab } = await client.from('sabotages').select('*').eq('id', 'fuga').maybeSingle();
+      const countBox = document.getElementById('countdownBox');
+      const stateText = document.getElementById('gasStateText');
+      const timerText = document.getElementById('timerText');
+
+      if (!sab || !sab.active) {
+        isSabotageActive = false;
+        thisValvePurged = false;
+        countBox.className = 'countdown-bar safe';
+        stateText.innerText = 'SISTEMA SEGURO';
+        timerText.innerText = 'OK';
+        document.getElementById('valveBadge').className = 'valve-status-badge status-ok';
+        document.getElementById('valveBadge').innerText = 'CONDUCTO SELLADO';
+        return;
+      }
+
+      isSabotageActive = true;
+      countBox.className = 'countdown-bar';
+      stateText.innerText = '⚠️ FUGA ACTIVA';
+
+      // Calcular segundos restantes
+      const elapsed = Math.floor((Date.now() - new Date(sab.started_at).getTime()) / 1000);
+      const remaining = Math.max(0, TIMEOUT_LIMIT - elapsed);
+      timerText.innerText = `${remaining}s`;
+
+      if (remaining === 0) {
+        stateText.innerText = '☠️ NAVE INTOXICADA';
+        timerText.innerText = '0s';
+        document.getElementById('statusMsg').innerText = 'VICTORIA DEL IMPOSTOR';
+        document.getElementById('statusMsg').style.color = '#ef4444';
+      }
+
+      // 2. Comprobar si esta válvula ya fue purgada
+      const { data: vData } = await client.from('gas_valves').select('*').eq('id', VALVE_ID).maybeSingle();
+      if (vData && vData.purged) {
+        thisValvePurged = true;
+        document.getElementById('valveBadge').className = 'valve-status-badge status-ok';
+        document.getElementById('valveBadge').innerText = `PURGADA POR ${vData.purged_by}`;
+      } else {
+        thisValvePurged = false;
+        document.getElementById('valveBadge').className = 'valve-status-badge status-pending';
+        document.getElementById('valveBadge').innerText = 'PENDIENTE DE PURGA';
+      }
+    }
+
+    function pressDigit(num) {
+      if (!isSabotageActive || thisValvePurged) return;
+      if (enteredCode.length < 5) {
+        enteredCode += num;
+        playBeep(350 + (num * 30), 'sine', 0.08);
+        updateDisplay();
+      }
+    }
+
+    function deleteDigit() {
+      if (!isSabotageActive || thisValvePurged) return;
+      if (enteredCode.length > 0) {
+        enteredCode = enteredCode.slice(0, -1);
+        playBeep(220, 'triangle', 0.08);
+        updateDisplay();
+      }
+    }
+
+    function updateDisplay() {
+      const display = document.getElementById('codeDisplay');
+      let str = enteredCode;
+      while (str.length < 5) str += '_';
+      display.innerText = str;
+    }
+
+    async function submitCode() {
+      if (!isSabotageActive || thisValvePurged) return;
+
+      if (enteredCode === SECRET_CODE) {
+        playBeep(880, 'sine', 0.3);
+        if (navigator.vibrate) navigator.vibrate(100);
+
+        // 1. Marcar esta válvula como purgada en Supabase
+        await client.from('gas_valves').upsert({
+          id: VALVE_ID,
+          purged: true,
+          purged_by: currentPlayer,
+          purged_at: new Date().toISOString()
+        });
+
+        thisValvePurged = true;
+        document.getElementById('statusMsg').innerText = 'Válvula A purgada. Esperando Válvula B...';
+        document.getElementById('statusMsg').style.color = '#fbbf24';
+
+        // 2. Comprobar si la otra válvula ya está purgada también
+        const { data: otherV } = await client.from('gas_valves').select('*').eq('id', OTHER_VALVE_ID).maybeSingle();
+        if (otherV && otherV.purged) {
+          // ¡AMBAS PURGADAS! Sabotaje desactivado
+          await client.from('sabotages').upsert({ id: 'fuga', active: false, fixed_by: `${currentPlayer} & ${otherV.purged_by}` });
+          // Resetear válvulas para la siguiente ocasión
+          await client.from('gas_valves').update({ purged: false }).neq('id', '');
+          document.getElementById('statusMsg').innerText = '¡FUGA DE GAS SELLADA CON ÉXITO!';
+          document.getElementById('statusMsg').style.color = '#22c55e';
+        }
+      } else {
+        playBeep(160, 'sawtooth', 0.3);
+        if (navigator.vibrate) navigator.vibrate(250);
+        document.getElementById('statusMsg').innerText = 'CÓDIGO ERRÓNEO';
+        document.getElementById('statusMsg').style.color = '#ef4444';
+        enteredCode = '';
+        updateDisplay();
+      }
+    }
+  </script>
+</body>
+</html>
