@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Transporte: Conducción en Ruta</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      background: #0b0d10;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 1rem;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    h2 { margin: 0 0 0.2rem 0; color: #fb923c; letter-spacing: 2px; font-size: 1.3rem; }
+    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    /* Marco de GPS / Carretera */
+    .gps-frame {
+      position: relative;
+      background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 80%, #000 100%);
+      border: 4px solid #ea580c;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 360px;
+      height: 390px;
+      overflow: hidden;
+      box-shadow: inset 0 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(234, 88, 12, 0.25);
+    }
+
+    /* Cuadrícula de GPS */
+    .gps-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(rgba(251, 146, 60, 0.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(251, 146, 60, 0.08) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+    }
+
+    /* Decoraciones visuales */
+    .route-badge {
+      position: absolute;
+      top: 10px;
+      left: 12px;
+      background: #ea580c;
+      color: #fff;
+      font-weight: 900;
+      font-size: 0.65rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      letter-spacing: 1px;
+      z-index: 4;
+    }
+    .compass {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 0.75rem;
+      color: #78716c;
+      font-weight: bold;
+      z-index: 4;
+    }
+
+    svg#mapSvg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+    }
+
+    /* Puntos de ruta (Poblaciones) */
+    .waypoint-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .waypoint-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #292524;
+      border: 2px dashed #fb923c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.8rem;
+      color: #fdba74;
+      transition: all 0.2s ease;
+    }
+    .waypoint-node.reached .waypoint-dot {
+      background: #ea580c;
+      border-style: solid;
+      color: #fff;
+      box-shadow: 0 0 12px #fb923c;
+    }
+    .waypoint-node.target .waypoint-dot {
+      border-color: #facc15;
+      color: #fef08a;
+      animation: pulseTarget 1s infinite alternate;
+    }
+    .waypoint-label {
+      margin-top: 3px;
+      font-size: 0.68rem;
+      font-weight: bold;
+      color: #a8a29e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: rgba(12, 10, 9, 0.75);
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    @keyframes pulseTarget {
+      from { transform: scale(1); box-shadow: 0 0 4px #facc15; }
+      to { transform: scale(1.18); box-shadow: 0 0 14px #facc15; }
+    }
+
+    /* Coche arrastrable */
+    #car {
+      position: absolute;
+      width: 42px;
+      height: 42px;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+      cursor: grab;
+      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.8));
+      transition: transform 0.05s ease-out;
+    }
+    #car:active {
+      cursor: grabbing;
+      transform: translate(-50%, -50%) scale(1.15);
+    }
+
+    #status {
+      margin-top: 1.2rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+      color: #22c55e;
+      min-height: 1.6rem;
+      letter-spacing: 1px;
+    }
+
+    /* Capa de inicio y bloqueo */
+    #overlay {
+      position: fixed; inset: 0; background: #0b0d10; z-index: 50;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
+    }
+    .overlay-input {
+      padding: 0.8rem; border-radius: 8px; border: 1px solid #444; background: #1e2430;
+      color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
+    }
+    .overlay-btn {
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ea580c; color: #fff;
+      border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
+    }
+    .btn-retry {
+      margin-top: 1rem; padding: 0.6rem 1.2rem; background: #334155; color: #fff;
+      border: none; border-radius: 6px; cursor: pointer; display: none;
+    }
+    .busy-box {
+      background: rgba(239,68,68,0.15); border: 2px solid #ef4444; border-radius: 10px;
+      padding: 1rem; margin: 1rem; max-width: 300px; display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Overlay de Turno y Nombre -->
+  <div id="overlay">
+    <h2 id="ovTitle" style="color: #fb923c;">IDENTIFÍCATE</h2>
+    <p id="ovDesc">Escribe tu nombre para empezar el viaje</p>
+    
+    <div id="busyAlert" class="busy-box">
+      <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
+      <strong style="color: #ef4444;">VEHÍCULO OCUPADO</strong>
+      <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
+    </div>
+
+    <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
+    <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Continuar</button>
+    <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
+  </div>
+
+  <h2>CONDUCCIÓN</h2>
+  <p>Arrastra el coche por la ruta: Valencia ➔ Minglanilla</p>
+
+  <div class="gps-frame" id="gps">
+    <div class="route-badge">AUTOVÍA A-3</div>
+    <div class="compass">▲ N</div>
+    <div class="gps-grid"></div>
+    <svg id="mapSvg"></svg>
+
+    <div id="waypointsContainer"></div>
+
+    <!-- Coche (SVG) -->
+    <div id="car">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <!-- Chasis -->
+        <rect x="24" y="16" width="52" height="68" rx="14" fill="#fb923c" stroke="#c2410c" stroke-width="4"/>
+        <!-- Ruedas -->
+        <rect x="16" y="24" width="8" height="16" rx="3" fill="#1c1917"/>
+        <rect x="76" y="24" width="8" height="16" rx="3" fill="#1c1917"/>
+        <rect x="16" y="60" width="8" height="16" rx="3" fill="#1c1917"/>
+        <rect x="76" y="60" width="8" height="16" rx="3" fill="#1c1917"/>
+        <!-- Parabrisas delantero -->
+        <path d="M 32 36 L 68 36 L 64 26 L 36 26 Z" fill="#0284c7"/>
+        <!-- Techo -->
+        <rect x="33" y="38" width="34" height="24" rx="4" fill="#ea580c"/>
+        <!-- Parabrisas trasero -->
+        <path d="M 34 64 L 66 64 L 63 70 L 37 70 Z" fill="#0284c7"/>
+        <!-- Luces delanteras -->
+        <ellipse cx="32" cy="19" rx="4" ry="2" fill="#fef08a"/>
+        <ellipse cx="68" cy="19" rx="4" ry="2" fill="#fef08a"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <script>
+    const TASK_ID = 'conduccion';
+    const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentPlayer = '';
+    let heartbeatTimer = null;
+
+    // Ruta de Valencia a Minglanilla por la A-3 (coordenadas relativas en %)
+    const WAYPOINTS = [
+      { x: 82, y: 78, name: 'Valencia', icon: 'START' },
+      { x: 58, y: 62, name: 'Buñol',    icon: '1' },
+      { x: 38, y: 38, name: 'Utiel',    icon: '2' },
+      { x: 18, y: 18, name: 'Minglanilla', icon: '🏁' }
+    ];
+
+    let currentStep = 1;
+    let isDragging = false;
+    let isCompleted = false;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function resetForm() {
+      document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
+      document.getElementById('ovTitle').style.color = '#fb923c';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar el viaje';
+      document.getElementById('busyAlert').style.display = 'none';
+      const input = document.getElementById('playerName');
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+      document.getElementById('btnStart').innerText = 'Continuar';
+      document.getElementById('btnStart').style.display = 'block';
+      document.getElementById('btnRetry').style.display = 'none';
+    }
+
+    async function checkPlayer() {
+      const input = document.getElementById('playerName');
+      const name = input.value.trim().toUpperCase();
+      if (!name) return alert('Escribe tu nombre');
+
+      currentPlayer = name;
+
+      // 1. Ya completada
+      const { data: doneData } = await client
+        .from('completed_tasks')
+        .select('*')
+        .eq('player_name', currentPlayer)
+        .eq('task_name', TASK_ID);
+
+      if (doneData && doneData.length > 0) {
+        document.getElementById('ovTitle').innerText = 'VIAJE YA COMPLETADO';
+        document.getElementById('ovTitle').style.color = '#ef4444';
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta ruta. Espera a que el admin la reinicie.`;
+        input.style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('btnRetry').style.display = 'block';
+        return;
+      }
+
+      // 2. Comprobar ocupación
+      const { data: session } = await client
+        .from('active_sessions')
+        .select('*')
+        .eq('task_name', TASK_ID)
+        .maybeSingle();
+
+      const now = Date.now();
+      if (session) {
+        const lastSeen = new Date(session.last_heartbeat).getTime();
+        const secondsAgo = (now - lastSeen) / 1000;
+
+        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+          document.getElementById('ovTitle').innerText = 'VEHÍCULO OCUPADO';
+          document.getElementById('ovTitle').style.color = '#ef4444';
+          document.getElementById('ovDesc').innerText = 'Solo puede conducir 1 persona a la vez.';
+          document.getElementById('busyAlert').style.display = 'block';
+          document.getElementById('busyMsg').innerText = `${session.player_name} está al volante en este momento.`;
+          input.style.display = 'none';
+          document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
+          document.getElementById('btnStart').style.display = 'block';
+          document.getElementById('btnRetry').style.display = 'block';
+          return;
+        }
+      }
+
+      // 3. Tomar turno
+      await takeSession();
+      document.getElementById('overlay').style.display = 'none';
+      heartbeatTimer = setInterval(takeSession, 3000);
+      initNavigation();
+    }
+
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: currentPlayer,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Lógica de Conducción
+    const gps = document.getElementById('gps');
+    const car = document.getElementById('car');
+    const svg = document.getElementById('mapSvg');
+    const wpContainer = document.getElementById('waypointsContainer');
+
+    function initNavigation() {
+      wpContainer.innerHTML = '';
+      svg.innerHTML = '';
+      currentStep = 1;
+      isCompleted = false;
+
+      // Línea de carretera discontinua
+      let pathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
+      for (let i = 1; i < WAYPOINTS.length; i++) {
+        pathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
+      }
+      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      pathEl.setAttribute('d', pathD);
+      pathEl.setAttribute('stroke', 'rgba(251, 146, 60, 0.3)');
+      pathEl.setAttribute('stroke-width', '5');
+      pathEl.setAttribute('stroke-dasharray', '8 6');
+      pathEl.setAttribute('fill', 'none');
+      svg.appendChild(pathEl);
+
+      // Trazo de carretera recorrido
+      const solidPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      solidPath.id = 'solidPath';
+      solidPath.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
+      solidPath.setAttribute('stroke', '#ea580c');
+      solidPath.setAttribute('stroke-width', '6');
+      solidPath.setAttribute('fill', 'none');
+      svg.appendChild(solidPath);
+
+      // Nodos con sus nombres
+      WAYPOINTS.forEach((wp, idx) => {
+        const node = document.createElement('div');
+        node.className = 'waypoint-node';
+        node.id = `node-${idx}`;
+        node.style.left = `${wp.x}%`;
+        node.style.top = `${wp.y}%`;
+
+        node.innerHTML = `
+          <div class="waypoint-dot">${wp.icon}</div>
+          <div class="waypoint-label">${wp.name}</div>
+        `;
+
+        if (idx === 0) node.classList.add('reached');
+        if (idx === 1) node.classList.add('target');
+        wpContainer.appendChild(node);
+      });
+
+      setCarPos(WAYPOINTS[0].x, WAYPOINTS[0].y);
+    }
+
+    function setCarPos(xPercent, yPercent) {
+      car.style.left = `${xPercent}%`;
+      car.style.top = `${yPercent}%`;
+    }
+
+    car.addEventListener('pointerdown', (e) => {
+      if (isCompleted) return;
+      isDragging = true;
+      car.setPointerCapture(e.pointerId);
+      playBeep(380, 'sine', 0.1);
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!isDragging || isCompleted) return;
+      const rect = gps.getBoundingClientRect();
+      let xPercent = ((e.clientX - rect.left) / rect.width) * 100;
+      let yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+
+      xPercent = Math.max(8, Math.min(92, xPercent));
+      yPercent = Math.max(8, Math.min(92, yPercent));
+
+      setCarPos(xPercent, yPercent);
+
+      const targetWp = WAYPOINTS[currentStep];
+      const dist = Math.hypot(xPercent - targetWp.x, yPercent - targetWp.y);
+
+      if (dist < 8) {
+        reachWaypoint(currentStep);
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      if (!isDragging || isCompleted) return;
+      isDragging = false;
+
+      // Si se suelta a mitad, vuelve al último pueblo confirmado
+      const lastWp = WAYPOINTS[currentStep - 1];
+      car.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
+      setCarPos(lastWp.x, lastWp.y);
+      setTimeout(() => car.style.transition = 'transform 0.05s ease-out', 250);
+    });
+
+    async function reachWaypoint(stepIdx) {
+      playBeep(450 + (stepIdx * 90), 'triangle', 0.2);
+      if (navigator.vibrate) navigator.vibrate(60);
+
+      const targetNode = document.getElementById(`node-${stepIdx}`);
+      targetNode.classList.remove('target');
+      targetNode.classList.add('reached');
+
+      // Extender trazo sólido
+      let solidD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
+      for (let i = 1; i <= stepIdx; i++) {
+        solidD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
+      }
+      document.getElementById('solidPath').setAttribute('d', solidD);
+
+      currentStep++;
+
+      if (currentStep >= WAYPOINTS.length) {
+        isCompleted = true;
+        isDragging = false;
+        setCarPos(WAYPOINTS[WAYPOINTS.length - 1].x, WAYPOINTS[WAYPOINTS.length - 1].y);
+
+        document.getElementById('status').innerText = '¡DESTINO ALCANZADO!';
+        playBeep(800, 'sine', 0.4);
+        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+
+        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+        await releaseSession();
+      } else {
+        document.getElementById(`node-${currentStep}`).classList.add('target');
+      }
+    }
+  </script>
+</body>
+</html>
