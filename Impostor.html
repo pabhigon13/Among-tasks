@@ -30,7 +30,7 @@
       gap: 1rem;
     }
 
-    /* Overlay inicio/bloqueo sesión única */
+    /* Overlay inicio/bloqueo */
     #overlay {
       position: fixed; inset: 0; background: #090305; z-index: 100;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
@@ -52,7 +52,7 @@
       padding: 1rem; margin: 1rem; max-width: 300px; display: none;
     }
 
-    /* Tarjetas de sección */
+    /* Tarjetas */
     .card {
       background: #18090d;
       border: 2px solid #3f1118;
@@ -72,7 +72,6 @@
       align-items: center;
     }
 
-    /* Barra de tareas global */
     .progress-track {
       width: 100%;
       height: 14px;
@@ -90,7 +89,6 @@
       transition: width 0.3s ease;
     }
 
-    /* Desglose individual de tareas */
     .task-details-toggle {
       background: #2b0b12;
       border: 1px solid #450a0a;
@@ -129,7 +127,6 @@
       font-size: 0.8rem;
     }
 
-    /* Botones de sabotaje */
     .sabotage-btn {
       width: 100%;
       padding: 0.85rem;
@@ -171,7 +168,6 @@
       to { box-shadow: 0 0 18px #facc15; }
     }
 
-    /* Radar de ocupación */
     .radar-list {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -191,16 +187,13 @@
       border-color: #ef4444;
       background: rgba(239, 68, 68, 0.1);
     }
-    .radar-status {
-      font-weight: bold;
-    }
+    .radar-status { font-weight: bold; }
     .radar-status.free { color: #22c55e; }
     .radar-status.busy { color: #ef4444; }
   </style>
 </head>
 <body>
 
-  <!-- Overlay para control de acceso y número de tripulantes -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #ef4444; margin-bottom: 0.3rem;">TERMINAL DEL IMPOSTOR</h2>
     <p id="ovDesc" style="color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 1.2rem;">Identificación y configuración de la partida</p>
@@ -212,7 +205,7 @@
     </div>
 
     <input id="playerName" class="overlay-input" placeholder="Tu nombre..." autocomplete="off" />
-    <input id="crewCountInput" class="overlay-input" type="number" min="1" max="20" placeholder="Nº de tripulantes (ej: 4)" autocomplete="off" />
+    <input id="crewCountInput" class="overlay-input" type="number" min="1" max="20" placeholder="Nº de tripulantes (ej: 7)" autocomplete="off" />
     <button id="btnStart" class="overlay-btn" onclick="checkPlayer()">Acceder</button>
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar de nuevo</button>
   </div>
@@ -223,7 +216,7 @@
       <p class="subtitle">Canal encubierto de interferencia y sabotaje</p>
     </div>
 
-    <!-- Progreso de Tareas Global con desglose individual X/Y -->
+    <!-- Progreso Global -->
     <div class="card">
       <div class="card-title">
         <span>PROGRESO DE TRIPULACIÓN</span>
@@ -234,43 +227,38 @@
       </div>
       <div id="tasksCount" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.4rem;">Cargando tareas...</div>
 
-      <!-- Botón para ver/ocultar el detalle X/Y por tarea -->
       <button class="task-details-toggle" onclick="toggleTaskBreakdown()">
         <span>📊 Ver desglose por tarea</span>
         <span id="breakdownArrow">▼</span>
       </button>
 
-      <!-- Lista de tareas X/Y -->
       <div class="task-breakdown-list" id="taskBreakdownGrid"></div>
     </div>
 
-    <!-- Botones de Sabotaje con Cooldowns específicos -->
+    <!-- Sabotajes -->
     <div class="card">
       <div class="card-title">
         <span>SISTEMA DE SABOTAJE</span>
         <span id="globalStatusLabel" style="color:#22c55e; font-size:0.75rem;">SISTEMAS OPERATIVOS</span>
       </div>
 
-      <!-- Sabotaje 1: Luces (35s cooldown) -->
       <button id="btnLuces" class="sabotage-btn" onclick="triggerSabotage('luces')">
         <span>💡 APAGAR LUCES</span>
         <span id="badgeLuces" style="font-size:0.75rem;">LISTO</span>
       </button>
 
-      <!-- Sabotaje 2: Fuga de Gas (60s cooldown - Crítico) -->
       <button id="btnFuga" class="sabotage-btn" onclick="triggerSabotage('fuga')">
         <span>☣️ FUGA DE GAS</span>
         <span id="badgeFuga" style="font-size:0.75rem;">LISTO</span>
       </button>
 
-      <!-- Sabotaje 3: Invertir Controles (40s cooldown) -->
       <button id="btnControles" class="sabotage-btn" onclick="triggerSabotage('controles')">
         <span>🌀 INVERTIR CONTROLES</span>
         <span id="badgeControles" style="font-size:0.75rem;">LISTO</span>
       </button>
     </div>
 
-    <!-- Radar en tiempo real -->
+    <!-- Radar -->
     <div class="card">
       <div class="card-title">
         <span>RADAR DE OCUPACIÓN</span>
@@ -287,21 +275,12 @@
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentPlayer = '';
-    let totalCrewCount = 4; // Valor por defecto
+    let totalCrewCount = 4;
     let heartbeatTimer = null;
     let showBreakdown = false;
 
-    const COOLDOWNS = {
-      luces: 35,
-      fuga: 60,
-      controles: 40
-    };
-
-    const lastFinishedTime = {
-      luces: 0,
-      fuga: 0,
-      controles: 0
-    };
+    const COOLDOWNS = { luces: 35, fuga: 60, controles: 40 };
+    const lastFinishedTime = { luces: 0, fuga: 0, controles: 0 };
 
     const ALL_TASKS = [
       { id: 'cables', name: '⚡ Cables' },
@@ -339,11 +318,15 @@
       const count = parseInt(inputCount.value.trim(), 10);
 
       if (!name) return alert('Escribe tu nombre');
-      if (isNaN(count) || count <= 0) return alert('Introduce un número de tripulantes válido (ej: 4)');
+      if (isNaN(count) || count <= 0) return alert('Introduce un número de tripulantes válido');
 
       currentPlayer = name;
       totalCrewCount = count;
 
+      // 1. Guardar en Supabase para sincronizar con admin
+      await client.from('game_settings').upsert({ id: 'global', crew_count: totalCrewCount, updated_at: new Date().toISOString() });
+
+      // 2. Control de ocupación
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -402,6 +385,12 @@
     }
 
     async function pollData() {
+      // 0. Sincronizar número de tripulantes por si el admin lo cambió
+      const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
+      if (settings && settings.crew_count) {
+        totalCrewCount = settings.crew_count;
+      }
+
       // 1. Sabotajes
       const { data: sabs } = await client.from('sabotages').select('*');
       if (sabs) {
@@ -414,7 +403,7 @@
         });
       }
 
-      // 2. Progreso global y cálculo por tarea X/Y
+      // 2. Progreso global
       const { data: doneTasks } = await client.from('completed_tasks').select('*');
       if (doneTasks) {
         const totalMaxTasks = totalCrewCount * ALL_TASKS.length;
@@ -438,7 +427,6 @@
       grid.innerHTML = '';
 
       ALL_TASKS.forEach(t => {
-        // Contar tripulantes distintos que completaron esta tarea concreta
         const completedThisTask = doneTasks.filter(item => item.task_name === t.id);
         const uniquePlayers = new Set(completedThisTask.map(i => i.player_name)).size;
 
