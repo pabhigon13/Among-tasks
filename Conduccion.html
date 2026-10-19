@@ -2,23 +2,26 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Navegación: Ruta A-3</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       box-sizing: border-box;
-      touch-action: none; /* Desactivar gestos del navegador para arrastre suave */
+      touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
     }
     body {
-      background: #090e17;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem 0.8rem;
+      padding: 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -33,6 +36,7 @@
       filter: hue-rotate(90deg);
     }
 
+    /* Banners y Overlays de Emergencias */
     #gasAlertBanner {
       display: none;
       position: fixed;
@@ -77,8 +81,21 @@
       padding: 1.5rem;
     }
 
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
     h2 { margin: 0 0 0.2rem 0; color: #fb923c; letter-spacing: 2px; }
-    p { margin: 0 0 0.4rem 0; color: #94a3b8; font-size: 0.85rem; }
+    p { margin: 0 0 0.4rem 0; color: #94a3b8; font-size: 0.82rem; }
 
     #inversionNotice {
       display: none;
@@ -89,47 +106,95 @@
       border: 1px dashed #facc15;
       border-radius: 6px;
       padding: 3px 8px;
-      margin-bottom: 0.6rem;
+      margin-bottom: 0.5rem;
       letter-spacing: 1px;
     }
 
-    .road-cabinet {
+    /* Pista de Conducción */
+    .game-box {
+      position: relative;
       background: #111827;
       border: 4px solid #1f2937;
-      border-radius: 18px;
-      padding: 0.8rem;
+      border-radius: 20px;
       width: 100%;
-      max-width: 360px;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
+      max-width: 320px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding: 0.8rem;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.6);
+      gap: 0.6rem;
+    }
+
+    .road-canvas-container {
+      position: relative;
+      width: 280px;
+      height: 260px;
+      background: #1e293b;
+      border: 3px solid #334155;
+      border-radius: 12px;
+      overflow: hidden;
     }
 
     canvas {
-      background: #0a0f1d;
-      border: 2px solid #334155;
-      border-radius: 12px;
-      width: 100%;
-      max-width: 340px;
-      height: 320px;
       display: block;
-      cursor: grab;
+      width: 100%;
+      height: 100%;
     }
-    canvas:active {
-      cursor: grabbing;
+
+    /* Barra de Progreso de Recorrido */
+    .road-progress-track {
+      width: 100%;
+      height: 10px;
+      background: #030712;
+      border-radius: 5px;
+      border: 1px solid #334155;
+      overflow: hidden;
+    }
+    .road-progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, #f97316, #22c55e);
+      transition: width 0.1s linear;
+    }
+
+    /* Botones de Control */
+    .controls-row {
+      display: flex;
+      width: 100%;
+      gap: 12px;
+      justify-content: center;
+    }
+    .drive-btn {
+      flex: 1;
+      padding: 0.9rem;
+      background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+      border: 2px solid #475569;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.6rem;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #0f172a;
+      transition: transform 0.05s ease;
+    }
+    .drive-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #0f172a;
+      background: #f97316;
+      border-color: #fb923c;
     }
 
     #status {
-      margin-top: 0.6rem;
+      margin-top: 0.5rem;
       font-weight: bold;
-      font-size: 1.15rem;
+      font-size: 1.1rem;
       color: #22c55e;
-      min-height: 1.5rem;
+      min-height: 1.4rem;
     }
 
     #overlay {
-      position: fixed; inset: 0; background: #090e17; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -175,6 +240,16 @@
     </p>
   </div>
 
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Vehículo estacionado. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
   <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #fb923c;">IDENTIFÍCATE</h2>
@@ -191,12 +266,23 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>RUTA A-3: CONDUCCIÓN</h2>
-  <p>Lleva el coche por la carretera: Valencia ➔ Buñol ➔ Utiel ➔ Minglanilla</p>
-  <div id="inversionNotice">🌀 DIRECCIÓN INVERTIDA: ARRASTRA EN SENTIDO CONTRARIO</div>
+  <h2>NAVEGACIÓN: RUTA A-3</h2>
+  <p>Mantén el rover dentro del carril y esquiva los baches</p>
+  <div id="inversionNotice">🌀 DIRECCIÓN INVERTIDA: GIROS OPUESTOS</div>
 
-  <div class="road-cabinet">
-    <canvas id="roadCanvas" width="340" height="320"></canvas>
+  <div class="game-box">
+    <div class="road-progress-track">
+      <div class="road-progress-fill" id="progressBar"></div>
+    </div>
+
+    <div class="road-canvas-container">
+      <canvas id="roadCanvas" width="280" height="260"></canvas>
+    </div>
+
+    <div class="controls-row">
+      <button class="drive-btn" id="btnLeft" onpointerdown="startSteer(-1)" onpointerup="stopSteer()" onpointerleave="stopSteer()">◀</button>
+      <button class="drive-btn" id="btnRight" onpointerdown="startSteer(1)" onpointerup="stopSteer()" onpointerleave="stopSteer()">▶</button>
+    </div>
   </div>
 
   <div id="status"></div>
@@ -207,29 +293,35 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
-    let isTaskDone = false;
-    let isControlesActive = false;
 
+    // Lógica del juego del coche
     const canvas = document.getElementById('roadCanvas');
     const ctx = canvas.getContext('2d');
 
-    // Definición de las 4 paradas
-    let waypoints = [
-      { name: 'Valencia', x: 40, y: 160, reached: true },
-      { name: 'Buñol', x: 125, y: 160, reached: false },
-      { name: 'Utiel', x: 215, y: 160, reached: false },
-      { name: 'Minglanilla', x: 300, y: 160, reached: false }
-    ];
+    const TOTAL_DISTANCE = 1000;
+    let distanceTraveled = 0;
+    let isTaskDone = false;
+    let isPausedByMeeting = false;
+    let isControlesActive = false;
 
-    let currentWaypointIdx = 0; // Empieza en Valencia (0) y debe alcanzar 1, 2, 3
-    let carPos = { x: 40, y: 160 };
-    let isDraggingCar = false;
-    let lastPointerPos = null;
+    let carX = 140;
+    const carY = 205;
+    const carWidth = 26;
+    const carHeight = 44;
+    let steeringDir = 0;
+
+    let roadCurve = 0;
+    let targetCurve = 0;
+    let curveTimer = 0;
+    let roadStripOffset = 0;
+
+    let obstacles = [];
+    let spawnTimer = 0;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.08) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.1) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
@@ -241,6 +333,10 @@
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -263,6 +359,7 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
 
       const { data: doneData } = await client
         .from('completed_tasks')
@@ -312,7 +409,7 @@
       checkSabotages();
       setInterval(checkSabotages, 1500);
 
-      initRoadGame();
+      requestAnimationFrame(gameLoop);
     }
 
     async function takeSession() {
@@ -334,6 +431,19 @@
     window.addEventListener('pagehide', releaseSession);
 
     async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        isPausedByMeeting = true;
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        isPausedByMeeting = false;
+        meetEl.style.display = 'none';
+      }
+
       const { data: sabs } = await client.from('sabotages').select('*');
       if (!sabs) return;
 
@@ -342,12 +452,7 @@
       const sabControles = sabs.find(s => s.id === 'controles');
 
       // 1. Luces
-      const blackoutEl = document.getElementById('lightsBlackout');
-      if (sabLuces && sabLuces.active) {
-        blackoutEl.style.display = 'flex';
-      } else {
-        blackoutEl.style.display = 'none';
-      }
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
       // 2. Fuga de gas
       const gasBanner = document.getElementById('gasAlertBanner');
@@ -359,18 +464,13 @@
         const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
         gasTimerSpan.innerText = `${remaining}s`;
-
-        if (remaining === 0) {
-          defeatEl.style.display = 'flex';
-        } else {
-          defeatEl.style.display = 'none';
-        }
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
       } else {
         gasBanner.style.display = 'none';
         defeatEl.style.display = 'none';
       }
 
-      // 3. Controles Invertidos (volteo visual y bandera lógica de arrastre inverso)
+      // 3. Controles
       const notice = document.getElementById('inversionNotice');
       if (sabControles && sabControles.active) {
         isControlesActive = true;
@@ -383,193 +483,187 @@
       }
     }
 
-    // Inicializar mapa y puntos con variación aleatoria en Y para Buñol y Utiel
-    function initRoadGame() {
-      // Buñol varía entre Y=70 e Y=240
-      const bunyolY = Math.floor(Math.random() * 160) + 70;
-      // Utiel varía entre Y=70 e Y=240 asegurando cierto desnivel
-      let utielY = Math.floor(Math.random() * 160) + 70;
-      if (Math.abs(utielY - bunyolY) < 30) {
-        utielY = bunyolY > 150 ? bunyolY - 60 : bunyolY + 60;
-      }
-
-      waypoints[0].y = 160; // Valencia centrado
-      waypoints[1].y = bunyolY;
-      waypoints[2].y = utielY;
-      waypoints[3].y = 160; // Minglanilla centrado
-
-      waypoints.forEach((wp, i) => wp.reached = (i === 0));
-      currentWaypointIdx = 0;
-      carPos = { x: waypoints[0].x, y: waypoints[0].y };
-      isTaskDone = false;
-
-      renderRoad();
-      setupTouchControls();
+    function startSteer(dir) {
+      if (isPausedByMeeting || isTaskDone) return;
+      steeringDir = isControlesActive ? -dir : dir;
     }
 
-    function renderRoad() {
+    function stopSteer() {
+      steeringDir = 0;
+    }
+
+    // Controles por teclado también (flechas o A/D)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') startSteer(-1);
+      if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') startSteer(1);
+    });
+    window.addEventListener('keyup', (e) => {
+      if (['ArrowLeft', 'ArrowRight', 'a', 'd', 'A', 'D'].includes(e.key)) stopSteer();
+    });
+
+    function gameLoop() {
+      if (!isTaskDone) {
+        if (!isPausedByMeeting) {
+          updateGame();
+        }
+        drawGame();
+        requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function updateGame() {
+      // Movimiento lateral del vehículo
+      carX += steeringDir * 4.2;
+
+      // Límites laterales de la pista
+      const leftLimit = 40;
+      const rightLimit = 240 - carWidth;
+      if (carX < leftLimit) carX = leftLimit;
+      if (carX > rightLimit) carX = rightLimit;
+
+      // Avance de carretera y curvas
+      distanceTraveled += 2.2;
+      const pct = Math.min(100, (distanceTraveled / TOTAL_DISTANCE) * 100);
+      document.getElementById('progressBar').style.width = `${pct}%`;
+
+      roadStripOffset = (roadStripOffset + 5) % 30;
+
+      curveTimer++;
+      if (curveTimer > 70) {
+        targetCurve = (Math.random() - 0.5) * 45;
+        curveTimer = 0;
+      }
+      roadCurve += (targetCurve - roadCurve) * 0.04;
+
+      // Generar obstáculos (baches marcianos)
+      spawnTimer++;
+      if (spawnTimer > 55) {
+        const laneX = 60 + Math.random() * 140;
+        obstacles.push({ x: laneX, y: -25, r: 11 });
+        spawnTimer = 0;
+      }
+
+      // Mover y verificar colisiones con obstáculos
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        const obs = obstacles[i];
+        obs.y += 4.5;
+
+        // Comprobar choque con el rover
+        const carCenterX = carX + carWidth / 2;
+        const carCenterY = carY + carHeight / 2;
+        const dist = Math.hypot(carCenterX - obs.x, carCenterY - obs.y);
+
+        if (dist < obs.r + 13) {
+          // Choque: frenazo, sonido de error y retroceso de distancia
+          playBeep(140, 'sawtooth', 0.25);
+          if (navigator.vibrate) navigator.vibrate(200);
+          distanceTraveled = Math.max(0, distanceTraveled - 90);
+          obstacles.splice(i, 1);
+          continue;
+        }
+
+        if (obs.y > 280) obstacles.splice(i, 1);
+      }
+
+      // Condición de llegada a meta
+      if (distanceTraveled >= TOTAL_DISTANCE) {
+        completeTask();
+      }
+    }
+
+    function drawGame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // 1. Dibujar asfalto de la carretera (tramos de línea gruesa)
-      ctx.lineWidth = 26;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = '#334155';
+      // Arena marciana exterior
+      ctx.fillStyle = '#7c2d12';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Asfalto / Pista de la ruta A-3
+      const roadW = 190;
+      const roadX = (canvas.width - roadW) / 2 + roadCurve;
+
+      ctx.fillStyle = '#0f172a';
       ctx.beginPath();
-      ctx.moveTo(waypoints[0].x, waypoints[0].y);
-      for (let i = 1; i < waypoints.length; i++) {
-        ctx.lineTo(waypoints[i].x, waypoints[i].y);
-      }
+      ctx.moveTo(roadX, 0);
+      ctx.lineTo(roadX + roadW, 0);
+      ctx.lineTo((canvas.width - roadW) / 2 + roadW, canvas.height);
+      ctx.lineTo((canvas.width - roadW) / 2, canvas.height);
+      ctx.closePath();
+      ctx.fill();
+
+      // Bordes reflectantes
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(roadX, 0); ctx.lineTo((canvas.width - roadW) / 2, canvas.height);
+      ctx.moveTo(roadX + roadW, 0); ctx.lineTo((canvas.width - roadW) / 2 + roadW, canvas.height);
       ctx.stroke();
 
-      // Línea discontinua central
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 8]);
+      // Líneas discontinuas centrales
       ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([16, 14]);
+      ctx.lineDashOffset = -roadStripOffset;
+      ctx.beginPath();
+      ctx.moveTo(roadX + roadW / 2, 0);
+      ctx.lineTo(canvas.width / 2, canvas.height);
       ctx.stroke();
-      ctx.setLineDash([]); // Reset dash
+      ctx.setLineDash([]);
 
-      // 2. Dibujar pueblos (waypoints)
-      waypoints.forEach((wp, idx) => {
-        const isReached = wp.reached;
-        const isNext = (idx === currentWaypointIdx + 1);
-
+      // Dibujar baches / rocas
+      obstacles.forEach(obs => {
+        ctx.fillStyle = '#3f1118';
         ctx.beginPath();
-        ctx.arc(wp.x, wp.y, 14, 0, Math.PI * 2);
-        ctx.fillStyle = isReached ? '#22c55e' : (isNext ? '#fb923c' : '#1e293b');
+        ctx.arc(obs.x, obs.y, obs.r, 0, Math.PI * 2);
         ctx.fill();
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = isReached ? '#86efac' : (isNext ? '#fed7aa' : '#475569');
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#f87171';
         ctx.stroke();
-
-        // Nombres de los pueblos
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillStyle = isReached ? '#86efac' : (isNext ? '#fb923c' : '#94a3b8');
-        ctx.textAlign = 'center';
-        const labelY = wp.y > 160 ? wp.y + 24 : wp.y - 18;
-        ctx.fillText(wp.name, wp.x, labelY);
       });
 
-      // 3. Dibujar coche
+      // Dibujar Rover espacial
       ctx.save();
-      ctx.translate(carPos.x, carPos.y);
-
-      // Chasis
-      ctx.fillStyle = '#ef4444';
-      ctx.beginPath();
-      ctx.roundRect(-16, -10, 32, 20, 5);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-
-      // Ventanilla delantera / cabina
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillRect(2, -7, 7, 14);
+      ctx.translate(carX, carY);
 
       // Ruedas
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(-12, -12, 7, 3);
-      ctx.fillRect(5, -12, 7, 3);
-      ctx.fillRect(-12, 9, 7, 3);
-      ctx.fillRect(5, 9, 7, 3);
+      ctx.fillStyle = '#000';
+      ctx.fillRect(-3, 6, 4, 10);
+      ctx.fillRect(carWidth - 1, 6, 4, 10);
+      ctx.fillRect(-3, 28, 4, 10);
+      ctx.fillRect(carWidth - 1, 28, 4, 10);
+
+      // Chasis
+      ctx.fillStyle = '#fb923c';
+      ctx.beginPath();
+      ctx.roundRect(0, 0, carWidth, carHeight, 8);
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#ea580c';
+      ctx.stroke();
+
+      // Parabrisas
+      ctx.fillStyle = '#38bdf8';
+      ctx.beginPath();
+      ctx.roundRect(4, 9, carWidth - 8, 12, 4);
+      ctx.fill();
+
+      // Luces delanteras
+      ctx.fillStyle = '#fef08a';
+      ctx.fillRect(4, 2, 5, 3);
+      ctx.fillRect(carWidth - 9, 2, 5, 3);
 
       ctx.restore();
     }
 
-    function setupTouchControls() {
-      function getCanvasCoords(e) {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        return {
-          x: (e.clientX - rect.left) * scaleX,
-          y: (e.clientY - rect.top) * scaleY
-        };
-      }
+    async function completeTask() {
+      isTaskDone = true;
+      document.getElementById('status').innerText = '¡DESTINO ALCANZADO!';
+      document.getElementById('status').style.color = '#22c55e';
+      playBeep(880, 'sine', 0.4);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-      canvas.addEventListener('pointerdown', (e) => {
-        if (isTaskDone) return;
-        const coords = getCanvasCoords(e);
-        const dist = Math.hypot(coords.x - carPos.x, coords.y - carPos.y);
-
-        // Si tocas el coche o muy cerca de él, empieza el agarre
-        if (dist <= 35) {
-          isDraggingCar = true;
-          lastPointerPos = coords;
-          canvas.setPointerCapture(e.pointerId);
-          playBeep(380, 'sine', 0.05);
-        }
-      });
-
-      canvas.addEventListener('pointermove', (e) => {
-        if (!isDraggingCar || isTaskDone || !lastPointerPos) return;
-
-        const currentPointer = getCanvasCoords(e);
-
-        // Delta del movimiento del dedo
-        let dx = currentPointer.x - lastPointerPos.x;
-        let dy = currentPointer.y - lastPointerPos.y;
-
-        // ==========================================
-        // SI EL SABOTAJE DE CONTROLES ESTÁ ACTIVO:
-        // INVERSIÓN TOTAL DE ARRASTRE TÁCTIL (X e Y)
-        // ==========================================
-        if (isControlesActive) {
-          dx = -dx;
-          dy = -dy;
-        }
-
-        // Aplicamos el delta al coche
-        carPos.x += dx;
-        carPos.y += dy;
-
-        // Mantener dentro del canvas
-        carPos.x = Math.max(15, Math.min(325, carPos.x));
-        carPos.y = Math.max(15, Math.min(305, carPos.y));
-
-        lastPointerPos = currentPointer;
-
-        checkWaypointProgress();
-        renderRoad();
-      });
-
-      function stopDrag(e) {
-        if (!isDraggingCar) return;
-        isDraggingCar = false;
-        lastPointerPos = null;
-        try { canvas.releasePointerCapture(e.pointerId); } catch (_) {}
-      }
-
-      canvas.addEventListener('pointerup', stopDrag);
-      canvas.addEventListener('pointercancel', stopDrag);
-    }
-
-    async function checkWaypointProgress() {
-      const nextIdx = currentWaypointIdx + 1;
-      if (nextIdx < waypoints.length) {
-        const targetWp = waypoints[nextIdx];
-        const dist = Math.hypot(carPos.x - targetWp.x, carPos.y - targetWp.y);
-
-        // Radio de llegada al pueblo
-        if (dist <= 22) {
-          targetWp.reached = true;
-          currentWaypointIdx = nextIdx;
-          playBeep(520 + nextIdx * 80, 'sine', 0.12);
-          if (navigator.vibrate) navigator.vibrate(50);
-
-          // Si llegó a Minglanilla (destino final)
-          if (currentWaypointIdx === waypoints.length - 1) {
-            isTaskDone = true;
-            document.getElementById('status').innerText = '¡DESTINO ALCANZADO (MINGLANILLA)!';
-            playBeep(880, 'sine', 0.4);
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-            await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
-            await releaseSession();
-          }
-        }
-      }
+      await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+      await releaseSession();
     }
   </script>
 </body>
