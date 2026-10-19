@@ -2,8 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Cocina: Control de Plagas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <title>Almacén: Cucarachas</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
@@ -13,208 +16,161 @@
       user-select: none;
     }
     body {
-      background: #0f0a06;
+      background: #080d1a;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0.6rem;
+      padding: 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       overflow: hidden;
-    }
-    h2 { margin: 0 0 0.2rem 0; color: #d97706; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.7rem 0; color: #94a3b8; font-size: 0.85rem; }
-
-    /* Mueble principal */
-    .kitchen-frame {
-      position: relative;
-      background: #1c130b;
-      border: 4px solid #78350f;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 360px;
-      height: 490px;
-      box-shadow: inset 0 0 25px rgba(0,0,0,0.85), 0 12px 30px rgba(0,0,0,0.7);
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      transition: transform 0.3s ease;
     }
 
-    /* Cabecera del contador */
-    .kitchen-header {
-      background: #2a180b;
-      border-bottom: 2px solid #451a03;
-      padding: 0.5rem 0.9rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 20;
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
     }
-    .header-label {
-      font-size: 0.8rem;
+
+    /* Banners y Overlays de Emergencias */
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
+      color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
       font-weight: 900;
-      color: #fed7aa;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
+    }
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
+    }
+
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    #meetingTaskOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 120;
+      color: #fff;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.15rem 0; color: #d97706; letter-spacing: 2px; }
+    p { margin: 0 0 0.4rem 0; color: #94a3b8; font-size: 0.85rem; }
+
+    #inversionNotice {
+      display: none;
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #facc15;
+      background: rgba(234, 179, 8, 0.15);
+      border: 1px dashed #facc15;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 0.5rem;
       letter-spacing: 1px;
     }
-    .counter-display {
-      font-family: "Courier New", monospace;
-      font-size: 1.25rem;
-      font-weight: 900;
-      color: #fbbf24;
-      background: #120904;
-      border: 1px solid #78350f;
-      padding: 2px 10px;
-      border-radius: 6px;
-      letter-spacing: 2px;
-    }
 
-    /* Suelo de baldosas/ladrillos blancos */
-    .kitchen-floor {
+    /* Recinto de las cucarachas */
+    .roach-arena {
       position: relative;
-      flex: 1;
+      background: #111827;
+      border: 4px solid #1f2937;
+      border-radius: 20px;
+      width: 100%;
+      max-width: 340px;
+      height: 340px;
+      box-shadow: inset 0 0 30px rgba(0,0,0,0.85), 0 10px 25px rgba(0,0,0,0.6);
       overflow: hidden;
-      background-color: #e5e7eb;
-      background-image:
-        linear-gradient(rgba(148, 163, 184, 0.45) 2px, transparent 2px),
-        linear-gradient(90deg, rgba(148, 163, 184, 0.45) 2px, transparent 2px);
-      background-size: 42px 42px;
       cursor: crosshair;
     }
 
-    /* Decoraciones de la cocina */
-    .kitchen-prop {
+    /* Contador de cucarachas restantes */
+    .counter-badge {
       position: absolute;
-      pointer-events: none;
-      z-index: 10;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.45));
-    }
-
-    /* Nevera arriba-izquierda */
-    .fridge {
-      top: 0;
-      left: 0;
-      width: 86px;
-      height: 94px;
-      background: linear-gradient(135deg, #cbd5e1 0%, #94a3b8 100%);
-      border-right: 3px solid #475569;
-      border-bottom: 3px solid #475569;
-      border-radius: 0 0 10px 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-around;
-      padding: 6px;
-    }
-    .fridge-door-line {
-      width: 100%;
-      height: 2px;
-      background: #475569;
-    }
-    .fridge-handle {
-      width: 6px;
-      height: 22px;
-      background: #334155;
-      border-radius: 3px;
-      align-self: flex-end;
-      margin-right: 4px;
-    }
-
-    /* Encimera arriba-derecha */
-    .countertop {
-      top: 0;
-      right: 0;
-      width: 110px;
-      height: 82px;
-      background: #334155;
-      border-left: 3px solid #1e293b;
-      border-bottom: 3px solid #1e293b;
-      border-radius: 0 0 0 10px;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-    }
-    .stove-burner {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      border: 3px solid #0f172a;
-      background: radial-gradient(circle, #475569 40%, #1e293b 80%);
-    }
-
-    /* Cubo de basura abajo-izquierda */
-    .trashcan {
-      bottom: 8px;
-      left: 8px;
-      width: 44px;
-      height: 52px;
-      background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%);
+      top: 12px;
+      right: 12px;
+      background: #030712;
       border: 2px solid #334155;
-      border-radius: 8px 8px 12px 12px;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: #f59e0b;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    /* Elemento Cucaracha */
+    .roach {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      font-size: 1.8rem;
       display: flex;
-      flex-direction: column;
       align-items: center;
-    }
-    .trash-lid {
-      width: 50px;
-      height: 8px;
-      background: #475569;
-      border-radius: 4px;
-      margin-top: -4px;
-    }
-    .trash-pedal {
-      width: 14px;
-      height: 4px;
-      background: #1e293b;
-      margin-top: auto;
-      margin-bottom: 2px;
-    }
-
-    /* Cucaracha dibujada en SVG */
-    .cockroach {
-      position: absolute;
-      width: 42px;
-      height: 42px;
-      transform: translate(-50%, -50%);
+      justify-content: center;
       cursor: pointer;
-      z-index: 6;
-      filter: drop-shadow(0 3px 4px rgba(0,0,0,0.5));
+      transform: translate(-50%, -50%);
+      transition: transform 0.15s ease-out;
+      z-index: 5;
     }
-    .cockroach svg {
-      width: 100%;
-      height: 100%;
+    .roach.splat {
       pointer-events: none;
-    }
-
-    /* Mancha de aplastamiento */
-    .splat {
-      position: absolute;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #78350f 40%, rgba(69, 26, 3, 0.6) 80%, transparent 100%);
-      transform: translate(-50%, -50%) scale(1.1);
-      pointer-events: none;
-      z-index: 4;
-      opacity: 0.85;
-      transition: opacity 2s ease-out;
+      filter: grayscale(1) opacity(0.35);
+      transform: translate(-50%, -50%) scale(0.85);
     }
 
     #status {
-      margin-top: 0.8rem;
+      margin-top: 0.6rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       color: #22c55e;
-      min-height: 1.6rem;
-      letter-spacing: 1px;
+      min-height: 1.4rem;
     }
 
-    /* Capa de inicio y bloqueo */
     #overlay {
-      position: fixed; inset: 0; background: #0f0a06; z-index: 50;
+      position: fixed; inset: 0; background: #080d1a; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -222,7 +178,7 @@
       color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #b45309; color: #fff;
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #d97706; color: #fff;
       border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     .btn-retry {
@@ -237,7 +193,40 @@
 </head>
 <body>
 
-  <!-- Overlay -->
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Alerta Bloqueo por Reunión -->
+  <div id="meetingTaskOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">🚨📢</div>
+    <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡REUNIÓN DE EMERGENCIA!</h1>
+    <p id="meetingTaskReporter" style="color: #93c5fd; font-size: 1rem; font-weight: bold; margin: 0 0 0.6rem 0;"></p>
+    <p style="color: #cbd5e1; font-size: 0.9rem; max-width: 280px; margin: 0;">
+      Almacén clausurado. Acude a la mesa central de inmediato.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #d97706;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -253,87 +242,34 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>CUCARACHAS</h2>
-  <p>Pisa las cucarachas que cruzan la cocina hasta eliminarlas</p>
+  <h2>ALMACÉN: CUCARACHAS</h2>
+  <p>Aplasta todas las cucarachas tocándolas</p>
+  <div id="inversionNotice">🌀 CONTROLES INVERTIDOS: TOCA EL LADO OPUESTO</div>
 
-  <div class="kitchen-frame">
-    <div class="kitchen-header">
-      <span class="header-label">PLAGA RESTANTE</span>
-      <span class="counter-display" id="killCounter">0/20</span>
-    </div>
-
-    <!-- Suelo interactivo -->
-    <div class="kitchen-floor" id="floorArea">
-      <!-- Nevera -->
-      <div class="kitchen-prop fridge">
-        <div class="fridge-handle"></div>
-        <div class="fridge-door-line"></div>
-        <div class="fridge-handle"></div>
-      </div>
-
-      <!-- Encimera -->
-      <div class="kitchen-prop countertop">
-        <div class="stove-burner"></div>
-        <div class="stove-burner"></div>
-      </div>
-
-      <!-- Cubo de basura -->
-      <div class="kitchen-prop trashcan">
-        <div class="trash-lid"></div>
-        <div class="trash-pedal"></div>
-      </div>
-    </div>
+  <div class="roach-arena" id="arenaBox">
+    <div class="counter-badge" id="counterBadge">RESTANTES: 8</div>
   </div>
 
   <div id="status"></div>
 
   <script>
     const TASK_ID = 'cucarachas';
-    const GOAL_KILLS = 20;
     const SUPABASE_URL = 'https://yxgwdxlplvxvnhnsgkja.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let currentPlayer = '';
+    let currentPlayer = localStorage.getItem('among_player_name') || '';
     let heartbeatTimer = null;
 
-    let kills = 0;
-    let isGameOver = false;
-    let bugs = [];
-    let spawnTimer = null;
-    let animFrame = null;
+    const TOTAL_ROACHES = 8;
+    let remainingRoaches = TOTAL_ROACHES;
+    let roachList = [];
+    let moveInterval = null;
+    let isTaskDone = false;
+    let isControlesActive = false;
+    let isPausedByMeeting = false;
 
-    // SVG vectorial de una cucaracha real
-    const COCKROACH_SVG = `
-      <svg viewBox="0 0 100 100">
-        <!-- Antenas -->
-        <path d="M 45 30 Q 30 10 20 6" stroke="#451a03" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <path d="M 55 30 Q 70 10 80 6" stroke="#451a03" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-
-        <!-- Patas traseras -->
-        <path d="M 38 65 L 15 82 L 10 94" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M 62 65 L 85 82 L 90 94" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-        <!-- Patas medias -->
-        <path d="M 36 50 L 12 52 L 8 62" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M 64 50 L 88 52 L 92 62" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-        <!-- Patas delanteras -->
-        <path d="M 40 38 L 18 28 L 14 18" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M 60 38 L 82 28 L 86 18" stroke="#451a03" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-        <!-- Cuerpo / Abdomen -->
-        <ellipse cx="50" cy="56" rx="14" ry="22" fill="#78350f" stroke="#451a03" stroke-width="2.5"/>
-        <!-- Rayas de segmentos del abdomen -->
-        <path d="M 39 48 Q 50 52 61 48" stroke="#451a03" stroke-width="2" fill="none"/>
-        <path d="M 38 56 Q 50 60 62 56" stroke="#451a03" stroke-width="2" fill="none"/>
-        <path d="M 40 64 Q 50 68 60 64" stroke="#451a03" stroke-width="2" fill="none"/>
-
-        <!-- Tórax y Cabeza -->
-        <ellipse cx="50" cy="38" rx="11" ry="8" fill="#92400e" stroke="#451a03" stroke-width="2"/>
-        <ellipse cx="50" cy="31" rx="7" ry="5" fill="#451a03"/>
-      </svg>
-    `;
+    const arena = document.getElementById('arenaBox');
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     function playBeep(freq = 440, type = 'sine', duration = 0.1) {
@@ -342,12 +278,16 @@
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.18, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + duration);
+    }
+
+    if (currentPlayer) {
+      document.getElementById('playerName').value = currentPlayer;
     }
 
     function resetForm() {
@@ -370,6 +310,7 @@
       if (!name) return alert('Escribe tu nombre');
 
       currentPlayer = name;
+      localStorage.setItem('among_player_name', currentPlayer);
 
       const { data: doneData } = await client
         .from('completed_tasks')
@@ -403,7 +344,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está limpiando la cocina ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -415,7 +356,11 @@
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      startGame();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      initRoaches();
     }
 
     async function takeSession() {
@@ -436,148 +381,181 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Motor de cucarachas
-    const floorArea = document.getElementById('floorArea');
-    const killCounter = document.getElementById('killCounter');
-
-    function startGame() {
-      kills = 0;
-      isGameOver = false;
-      bugs = [];
-      updateCounter();
-
-      document.querySelectorAll('.cockroach, .splat').forEach(e => e.remove());
-
-      // Aparecen cada 650ms
-      spawnTimer = setInterval(spawnBug, 650);
-      animFrame = requestAnimationFrame(gameLoop);
-    }
-
-    function spawnBug() {
-      if (isGameOver) return;
-      if (bugs.length >= 5) return;
-
-      const rect = floorArea.getBoundingClientRect();
-      const side = Math.floor(Math.random() * 4);
-      let startX = 0, startY = 0;
-      let targetX = 0, targetY = 0;
-
-      if (side === 0) { // Nace arriba
-        startX = Math.random() * rect.width;
-        startY = -25;
-        targetX = Math.random() * rect.width;
-        targetY = rect.height + 25;
-      } else if (side === 1) { // Nace abajo
-        startX = Math.random() * rect.width;
-        startY = rect.height + 25;
-        targetX = Math.random() * rect.width;
-        targetY = -25;
-      } else if (side === 2) { // Nace izquierda
-        startX = -25;
-        startY = Math.random() * rect.height;
-        targetX = rect.width + 25;
-        targetY = Math.random() * rect.height;
-      } else { // Nace derecha
-        startX = rect.width + 25;
-        startY = Math.random() * rect.height;
-        targetX = -25;
-        targetY = Math.random() * rect.height;
+    async function checkSabotages() {
+      // 0. Bloqueo por reunión
+      const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
+      const meetEl = document.getElementById('meetingTaskOverlay');
+      if (meeting && meeting.active) {
+        isPausedByMeeting = true;
+        meetEl.style.display = 'flex';
+        document.getElementById('meetingTaskReporter').innerText = `Reportado por: ${meeting.reported_by}`;
+        return;
+      } else {
+        isPausedByMeeting = false;
+        meetEl.style.display = 'none';
       }
 
-      const dx = targetX - startX;
-      const dy = targetY - startY;
-      const dist = Math.hypot(dx, dy);
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-      // Velocidad más lenta y manejable
-      const speed = Math.random() * 0.8 + 1.4;
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
 
-      const angleRad = Math.atan2(dy, dx);
-      const angleDeg = (angleRad * 180 / Math.PI) + 90;
+      // 1. Luces
+      document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
-      const el = document.createElement('div');
-      el.className = 'cockroach';
-      el.innerHTML = COCKROACH_SVG;
-      el.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
-      floorArea.appendChild(el);
+      // 2. Fuga de gas
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
 
-      const bug = {
-        el: el,
-        x: startX,
-        y: startY,
-        vx: (dx / dist) * speed,
-        vy: (dy / dist) * speed,
-        angle: angleDeg,
-        alive: true
-      };
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
+        defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
+      }
 
-      el.addEventListener('pointerdown', (e) => {
-        e.stopPropagation();
-        squashBug(bug);
-      });
-
-      bugs.push(bug);
-    }
-
-    function squashBug(bug) {
-      if (!bug.alive || isGameOver) return;
-      bug.alive = false;
-
-      playBeep(210, 'triangle', 0.15);
-      if (navigator.vibrate) navigator.vibrate(50);
-
-      const splat = document.createElement('div');
-      splat.className = 'splat';
-      splat.style.left = `${bug.x}px`;
-      splat.style.top = `${bug.y}px`;
-      floorArea.appendChild(splat);
-      setTimeout(() => splat.style.opacity = '0.2', 700);
-
-      bug.el.remove();
-      bugs = bugs.filter(b => b !== bug);
-
-      kills++;
-      updateCounter();
-
-      if (kills >= GOAL_KILLS) {
-        finishGame();
+      // 3. Controles
+      const notice = document.getElementById('inversionNotice');
+      if (sabControles && sabControles.active) {
+        isControlesActive = true;
+        document.body.classList.add('inverted-controls');
+        notice.style.display = 'inline-block';
+      } else {
+        isControlesActive = false;
+        document.body.classList.remove('inverted-controls');
+        notice.style.display = 'none';
       }
     }
 
-    function gameLoop() {
-      if (isGameOver) return;
-      const rect = floorArea.getBoundingClientRect();
+    function initRoaches() {
+      arena.querySelectorAll('.roach').forEach(el => el.remove());
+      roachList = [];
+      remainingRoaches = TOTAL_ROACHES;
+      document.getElementById('counterBadge').innerText = `RESTANTES: ${remainingRoaches}`;
 
-      for (let i = bugs.length - 1; i >= 0; i--) {
-        const bug = bugs[i];
-        if (!bug.alive) continue;
+      const w = arena.clientWidth || 320;
+      const h = arena.clientHeight || 320;
 
-        bug.x += bug.vx;
-        bug.y += bug.vy;
+      for (let i = 0; i < TOTAL_ROACHES; i++) {
+        const el = document.createElement('div');
+        el.className = 'roach';
+        el.innerText = '🪳';
 
-        bug.el.style.left = `${bug.x}px`;
-        bug.el.style.top = `${bug.y}px`;
+        const rObj = {
+          id: i,
+          el: el,
+          x: 35 + Math.random() * (w - 70),
+          y: 35 + Math.random() * (h - 70),
+          vx: (Math.random() - 0.5) * 3.5,
+          vy: (Math.random() - 0.5) * 3.5,
+          dead: false
+        };
 
-        if (bug.x < -40 || bug.x > rect.width + 40 || bug.y < -40 || bug.y > rect.height + 40) {
-          bug.el.remove();
-          bugs.splice(i, 1);
+        el.style.left = `${rObj.x}px`;
+        el.style.top = `${rObj.y}px`;
+
+        arena.appendChild(el);
+        roachList.push(rObj);
+      }
+
+      setupArenaTapEvents();
+
+      if (moveInterval) clearInterval(moveInterval);
+      moveInterval = setInterval(updateRoachesMotion, 60);
+    }
+
+    function updateRoachesMotion() {
+      if (isPausedByMeeting || isTaskDone) return;
+
+      const w = arena.clientWidth || 320;
+      const h = arena.clientHeight || 320;
+
+      roachList.forEach(r => {
+        if (r.dead) return;
+
+        r.x += r.vx;
+        r.y += r.vy;
+
+        // Rebotes en paredes
+        if (r.x < 25) { r.x = 25; r.vx = Math.abs(r.vx); }
+        if (r.x > w - 25) { r.x = w - 25; r.vx = -Math.abs(r.vx); }
+        if (r.y < 25) { r.y = 25; r.vy = Math.abs(r.vy); }
+        if (r.y > h - 25) { r.y = h - 25; r.vy = -Math.abs(r.vy); }
+
+        // Variación aleatoria de rumbo
+        if (Math.random() < 0.08) {
+          r.vx = (Math.random() - 0.5) * 3.8;
+          r.vy = (Math.random() - 0.5) * 3.8;
         }
+
+        // Rotación orientada al movimiento
+        const angle = Math.atan2(r.vy, r.vx) * (180 / Math.PI) + 90;
+        r.el.style.left = `${r.x}px`;
+        r.el.style.top = `${r.y}px`;
+        r.el.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+      });
+    }
+
+    function setupArenaTapEvents() {
+      arena.addEventListener('pointerdown', (e) => {
+        if (isTaskDone || isPausedByMeeting) return;
+
+        const rect = arena.getBoundingClientRect();
+        let tapX = e.clientX - rect.left;
+        let tapY = e.clientY - rect.top;
+
+        // INVERSIÓN: Si está activo el sabotaje de controles, el golpe real cae en el punto simétrico opuesto
+        if (isControlesActive) {
+          tapX = arena.clientWidth - tapX;
+          tapY = arena.clientHeight - tapY;
+        }
+
+        // Comprobar si golpea a alguna cucaracha viva
+        let hit = false;
+        for (let i = 0; i < roachList.length; i++) {
+          const r = roachList[i];
+          if (r.dead) continue;
+
+          const dist = Math.hypot(tapX - r.x, tapY - r.y);
+          if (dist < 32) {
+            splatRoach(r);
+            hit = true;
+            break;
+          }
+        }
+
+        if (!hit) {
+          playBeep(200, 'sine', 0.04);
+        }
+      });
+    }
+
+    function splatRoach(r) {
+      r.dead = true;
+      r.el.classList.add('splat');
+      playBeep(360, 'sawtooth', 0.12);
+      if (navigator.vibrate) navigator.vibrate(60);
+
+      remainingRoaches--;
+      document.getElementById('counterBadge').innerText = `RESTANTES: ${remainingRoaches}`;
+
+      if (remainingRoaches <= 0) {
+        completeTask();
       }
-
-      animFrame = requestAnimationFrame(gameLoop);
     }
 
-    function updateCounter() {
-      killCounter.innerText = `${kills}/${GOAL_KILLS}`;
-    }
-
-    async function finishGame() {
-      isGameOver = true;
-      clearInterval(spawnTimer);
-      cancelAnimationFrame(animFrame);
-
-      document.querySelectorAll('.cockroach').forEach(b => b.remove());
-
-      document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
+    async function completeTask() {
+      isTaskDone = true;
+      if (moveInterval) clearInterval(moveInterval);
+      document.getElementById('status').innerText = '¡ALMACÉN DESINFECTADO!';
+      document.getElementById('status').style.color = '#22c55e';
       playBeep(880, 'sine', 0.4);
       if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
