@@ -18,42 +18,40 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem;
+      padding: 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      overflow: hidden;
+      overflow-x: hidden;
     }
     h2 { margin: 0 0 0.2rem 0; color: #fb923c; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.85rem; }
+    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
 
-    /* Marco de GPS / Carretera */
+    /* Marco panorámico horizontal */
     .gps-frame {
       position: relative;
       background: radial-gradient(circle at center, #1c1917 0%, #0c0a09 80%, #000 100%);
       border: 4px solid #ea580c;
       border-radius: 16px;
       width: 100%;
-      max-width: 360px;
-      height: 390px;
+      max-width: 680px;
+      height: 280px;
       overflow: hidden;
       box-shadow: inset 0 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(234, 88, 12, 0.25);
     }
 
-    /* Cuadrícula de GPS */
     .gps-grid {
       position: absolute;
       inset: 0;
       background-image: 
         linear-gradient(rgba(251, 146, 60, 0.08) 1px, transparent 1px),
         linear-gradient(90deg, rgba(251, 146, 60, 0.08) 1px, transparent 1px);
-      background-size: 28px 28px;
+      background-size: 26px 26px;
       pointer-events: none;
     }
 
-    /* Decoraciones visuales */
     .route-badge {
       position: absolute;
       top: 10px;
@@ -85,7 +83,6 @@
       z-index: 2;
     }
 
-    /* Puntos de ruta (Poblaciones) */
     .waypoint-node {
       position: absolute;
       transform: translate(-50%, -50%);
@@ -113,7 +110,7 @@
       background: #ea580c;
       border-style: solid;
       color: #fff;
-      box-shadow: 0 0 12px #fb923c;
+      box-shadow: 0 0 14px #fb923c;
     }
     .waypoint-node.target .waypoint-dot {
       border-color: #facc15;
@@ -122,14 +119,15 @@
     }
     .waypoint-label {
       margin-top: 3px;
-      font-size: 0.68rem;
+      font-size: 0.65rem;
       font-weight: bold;
       color: #a8a29e;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       background: rgba(12, 10, 9, 0.75);
-      padding: 1px 4px;
+      padding: 1px 5px;
       border-radius: 3px;
+      white-space: nowrap;
     }
 
     @keyframes pulseTarget {
@@ -137,24 +135,23 @@
       to { transform: scale(1.18); box-shadow: 0 0 14px #facc15; }
     }
 
-    /* Coche arrastrable */
+    /* Coche */
     #car {
       position: absolute;
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       transform: translate(-50%, -50%);
       z-index: 10;
       cursor: grab;
-      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.8));
-      transition: transform 0.05s ease-out;
+      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.85));
     }
     #car:active {
       cursor: grabbing;
-      transform: translate(-50%, -50%) scale(1.15);
+      filter: drop-shadow(0 0 14px rgba(251, 146, 60, 1));
     }
 
     #status {
-      margin-top: 1.2rem;
+      margin-top: 1rem;
       font-weight: bold;
       font-size: 1.2rem;
       color: #22c55e;
@@ -187,7 +184,6 @@
 </head>
 <body>
 
-  <!-- Overlay de Turno y Nombre -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #fb923c;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar el viaje</p>
@@ -204,35 +200,35 @@
   </div>
 
   <h2>CONDUCCIÓN</h2>
-  <p>Arrastra el coche por la ruta: Valencia ➔ Minglanilla</p>
+  <p>Arrastra el coche por la carretera: Valencia ➔ Buñol ➔ Utiel ➔ Minglanilla</p>
 
   <div class="gps-frame" id="gps">
     <div class="route-badge">AUTOVÍA A-3</div>
-    <div class="compass">▲ N</div>
+    <div class="compass">E ▶</div>
     <div class="gps-grid"></div>
     <svg id="mapSvg"></svg>
 
     <div id="waypointsContainer"></div>
 
-    <!-- Coche (SVG) -->
+    <!-- Coche horizontal con orientación hacia el Este -->
     <div id="car">
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <!-- Chasis -->
-        <rect x="24" y="16" width="52" height="68" rx="14" fill="#fb923c" stroke="#c2410c" stroke-width="4"/>
+        <!-- Chasis orientado hacia la derecha -->
+        <rect x="16" y="24" width="68" height="52" rx="14" fill="#fb923c" stroke="#c2410c" stroke-width="4"/>
         <!-- Ruedas -->
-        <rect x="16" y="24" width="8" height="16" rx="3" fill="#1c1917"/>
-        <rect x="76" y="24" width="8" height="16" rx="3" fill="#1c1917"/>
-        <rect x="16" y="60" width="8" height="16" rx="3" fill="#1c1917"/>
-        <rect x="76" y="60" width="8" height="16" rx="3" fill="#1c1917"/>
-        <!-- Parabrisas delantero -->
-        <path d="M 32 36 L 68 36 L 64 26 L 36 26 Z" fill="#0284c7"/>
+        <rect x="24" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
+        <rect x="60" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
+        <rect x="24" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
+        <rect x="60" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
+        <!-- Parabrisas delantero (derecha) -->
+        <path d="M 64 32 L 64 68 L 74 64 L 74 36 Z" fill="#0284c7"/>
         <!-- Techo -->
-        <rect x="33" y="38" width="34" height="24" rx="4" fill="#ea580c"/>
-        <!-- Parabrisas trasero -->
-        <path d="M 34 64 L 66 64 L 63 70 L 37 70 Z" fill="#0284c7"/>
+        <rect x="38" y="33" width="24" height="34" rx="4" fill="#ea580c"/>
+        <!-- Parabrisas trasero (izquierda) -->
+        <path d="M 36 34 L 36 66 L 30 63 L 30 37 Z" fill="#0284c7"/>
         <!-- Luces delanteras -->
-        <ellipse cx="32" cy="19" rx="4" ry="2" fill="#fef08a"/>
-        <ellipse cx="68" cy="19" rx="4" ry="2" fill="#fef08a"/>
+        <ellipse cx="81" cy="32" rx="2" ry="4" fill="#fef08a"/>
+        <ellipse cx="81" cy="68" rx="2" ry="4" fill="#fef08a"/>
       </svg>
     </div>
   </div>
@@ -248,14 +244,7 @@
     let currentPlayer = '';
     let heartbeatTimer = null;
 
-    // Ruta de Valencia a Minglanilla por la A-3 (coordenadas relativas en %)
-    const WAYPOINTS = [
-      { x: 82, y: 78, name: 'Valencia', icon: 'START' },
-      { x: 58, y: 62, name: 'Buñol',    icon: '1' },
-      { x: 38, y: 38, name: 'Utiel',    icon: '2' },
-      { x: 18, y: 18, name: 'Minglanilla', icon: '🏁' }
-    ];
-
+    let WAYPOINTS = [];
     let currentStep = 1;
     let isDragging = false;
     let isCompleted = false;
@@ -339,7 +328,7 @@
         }
       }
 
-      // 3. Tomar turno
+      // 3. Tomar posesión
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
@@ -364,11 +353,15 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Lógica de Conducción
+    // Configuración y generación de ruta
     const gps = document.getElementById('gps');
     const car = document.getElementById('car');
     const svg = document.getElementById('mapSvg');
     const wpContainer = document.getElementById('waypointsContainer');
+
+    function randomBetween(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
 
     function initNavigation() {
       wpContainer.innerHTML = '';
@@ -376,29 +369,40 @@
       currentStep = 1;
       isCompleted = false;
 
-      // Línea de carretera discontinua
+      // Generar puntos de izquierda a derecha con altura Y aleatoria en los intermedios
+      // Rango Y entre 25% y 75% para que no toquen los bordes
+      WAYPOINTS = [
+        { x: 10, y: randomBetween(35, 65), name: 'Valencia',    icon: 'START' },
+        { x: 36, y: randomBetween(25, 75), name: 'Buñol',       icon: '1' },
+        { x: 64, y: randomBetween(25, 75), name: 'Utiel',       icon: '2' },
+        { x: 90, y: randomBetween(35, 65), name: 'Minglanilla', icon: '🏁' }
+      ];
+
+      // Carretera completa (fondo discontinua)
       let pathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i < WAYPOINTS.length; i++) {
         pathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
       }
-      const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      pathEl.setAttribute('d', pathD);
-      pathEl.setAttribute('stroke', 'rgba(251, 146, 60, 0.3)');
-      pathEl.setAttribute('stroke-width', '5');
-      pathEl.setAttribute('stroke-dasharray', '8 6');
-      pathEl.setAttribute('fill', 'none');
-      svg.appendChild(pathEl);
+      const baseLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      baseLine.setAttribute('d', pathD);
+      baseLine.setAttribute('stroke', 'rgba(251, 146, 60, 0.25)');
+      baseLine.setAttribute('stroke-width', '4');
+      baseLine.setAttribute('stroke-dasharray', '8 6');
+      baseLine.setAttribute('fill', 'none');
+      svg.appendChild(baseLine);
 
-      // Trazo de carretera recorrido
-      const solidPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      solidPath.id = 'solidPath';
-      solidPath.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
-      solidPath.setAttribute('stroke', '#ea580c');
-      solidPath.setAttribute('stroke-width', '6');
-      solidPath.setAttribute('fill', 'none');
-      svg.appendChild(solidPath);
+      // Línea sólida de tramos completados (en negrita)
+      const boldLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      boldLine.id = 'boldRoad';
+      boldLine.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
+      boldLine.setAttribute('stroke', '#ea580c');
+      boldLine.setAttribute('stroke-width', '8');
+      boldLine.setAttribute('stroke-linecap', 'round');
+      boldLine.setAttribute('stroke-linejoin', 'round');
+      boldLine.setAttribute('fill', 'none');
+      svg.appendChild(boldLine);
 
-      // Nodos con sus nombres
+      // Renderizar poblaciones
       WAYPOINTS.forEach((wp, idx) => {
         const node = document.createElement('div');
         node.className = 'waypoint-node';
@@ -428,24 +432,35 @@
       if (isCompleted) return;
       isDragging = true;
       car.setPointerCapture(e.pointerId);
+      car.style.transition = 'none';
       playBeep(380, 'sine', 0.1);
     });
 
     window.addEventListener('pointermove', (e) => {
       if (!isDragging || isCompleted) return;
       const rect = gps.getBoundingClientRect();
-      let xPercent = ((e.clientX - rect.left) / rect.width) * 100;
-      let yPercent = ((e.clientY - rect.top) / rect.height) * 100;
+      const pointerX = ((e.clientX - rect.left) / rect.width) * 100;
+      const pointerY = ((e.clientY - rect.top) / rect.height) * 100;
 
-      xPercent = Math.max(8, Math.min(92, xPercent));
-      yPercent = Math.max(8, Math.min(92, yPercent));
+      const pA = WAYPOINTS[currentStep - 1]; // Origen del tramo
+      const pB = WAYPOINTS[currentStep];     // Destino del tramo
 
-      setCarPos(xPercent, yPercent);
+      // Proyección matemática sobre el segmento pA -> pB (efecto carril/raíl)
+      const dx = pB.x - pA.x;
+      const dy = pB.y - pA.y;
+      const lenSq = dx * dx + dy * dy;
 
-      const targetWp = WAYPOINTS[currentStep];
-      const dist = Math.hypot(xPercent - targetWp.x, yPercent - targetWp.y);
+      let t = ((pointerX - pA.x) * dx + (pointerY - pA.y) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t)); // Confinar dentro del tramo
 
-      if (dist < 8) {
+      // Posición fija sobre la línea
+      const clampedX = pA.x + t * dx;
+      const clampedY = pA.y + t * dy;
+
+      setCarPos(clampedX, clampedY);
+
+      // Comprobar si llegó a la meta del tramo actual
+      if (t >= 0.96) {
         reachWaypoint(currentStep);
       }
     });
@@ -454,11 +469,11 @@
       if (!isDragging || isCompleted) return;
       isDragging = false;
 
-      // Si se suelta a mitad, vuelve al último pueblo confirmado
-      const lastWp = WAYPOINTS[currentStep - 1];
+      // Si suelta antes de llegar, retrocede suavemente al inicio del tramo
+      const prevWp = WAYPOINTS[currentStep - 1];
       car.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
-      setCarPos(lastWp.x, lastWp.y);
-      setTimeout(() => car.style.transition = 'transform 0.05s ease-out', 250);
+      setCarPos(prevWp.x, prevWp.y);
+      setTimeout(() => car.style.transition = 'none', 260);
     });
 
     async function reachWaypoint(stepIdx) {
@@ -469,22 +484,23 @@
       targetNode.classList.remove('target');
       targetNode.classList.add('reached');
 
-      // Extender trazo sólido
-      let solidD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
+      // Actualizar carretera en negrita hasta este nodo
+      let boldD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i <= stepIdx; i++) {
-        solidD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
+        boldD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
       }
-      document.getElementById('solidPath').setAttribute('d', solidD);
+      document.getElementById('boldRoad').setAttribute('d', boldD);
 
       currentStep++;
 
+      // Meta final
       if (currentStep >= WAYPOINTS.length) {
         isCompleted = true;
         isDragging = false;
         setCarPos(WAYPOINTS[WAYPOINTS.length - 1].x, WAYPOINTS[WAYPOINTS.length - 1].y);
 
         document.getElementById('status').innerText = '¡DESTINO ALCANZADO!';
-        playBeep(800, 'sine', 0.4);
+        playBeep(820, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
         await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
