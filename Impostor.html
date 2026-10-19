@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Terminal del Impostor</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
@@ -135,7 +138,6 @@
       <p id="impostorGreeting" class="subtitle">Validando identidad encubierta...</p>
     </div>
 
-    <!-- Progreso Global -->
     <div class="card">
       <div class="card-title">
         <span>PROGRESO DE TRIPULACIÓN</span>
@@ -154,7 +156,6 @@
       <div class="task-breakdown-list" id="taskBreakdownGrid"></div>
     </div>
 
-    <!-- Sabotajes -->
     <div class="card">
       <div class="card-title">
         <span>SISTEMA DE SABOTAJE</span>
@@ -177,7 +178,6 @@
       </button>
     </div>
 
-    <!-- Radar -->
     <div class="card">
       <div class="card-title">
         <span>RADAR DE OCUPACIÓN</span>
@@ -227,79 +227,32 @@
 
     let currentSabotages = {};
 
-    function redirectToHome() {
+    function kickToHome() {
       localStorage.removeItem('among_player_name');
       const origin = window.location.origin;
       const path = window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/'));
       window.location.replace(`${origin}${path}/Home.html`);
     }
 
-    // Comprobación de seguridad inicial
-    async function verifyImpostorAccess() {
+    async function verifyAndPoll() {
       if (!currentPlayer) {
-        redirectToHome();
+        kickToHome();
         return;
       }
 
-      const { data: player } = await client
+      // Comprobación de existencia en la base de datos
+      const { data: player, error } = await client
         .from('game_players')
         .select('*')
         .eq('player_name', currentPlayer)
         .maybeSingle();
 
-      if (!player || player.role !== 'impostor') {
-        redirectToHome();
+      if (error || !player || player.role !== 'impostor') {
+        kickToHome();
         return;
       }
 
       document.getElementById('impostorGreeting').innerText = `Impostor: ${currentPlayer} (Canal encubierto)`;
-      initImpostor();
-    }
-
-    function initImpostor() {
-      takeSession();
-      heartbeatTimer = setInterval(takeSession, 3000);
-      pollData();
-      setInterval(pollData, 1500);
-      setInterval(updateCooldownUI, 500);
-    }
-
-    async function takeSession() {
-      await client.from('active_sessions').upsert({
-        task_name: TASK_ID,
-        player_name: `${currentPlayer}:::${mySessionToken}`,
-        last_heartbeat: new Date().toISOString()
-      });
-    }
-
-    async function releaseSession() {
-      if (heartbeatTimer) clearInterval(heartbeatTimer);
-      if (currentPlayer) {
-        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', `${currentPlayer}:::${mySessionToken}`);
-      }
-    }
-
-    window.addEventListener('beforeunload', releaseSession);
-    window.addEventListener('pagehide', releaseSession);
-
-    function toggleTaskBreakdown() {
-      showBreakdown = !showBreakdown;
-      document.getElementById('taskBreakdownGrid').style.display = showBreakdown ? 'grid' : 'none';
-      document.getElementById('breakdownArrow').innerText = showBreakdown ? '▲' : '▼';
-    }
-
-    async function pollData() {
-      // Vigilante continuo
-      const { data: player } = await client
-        .from('game_players')
-        .select('*')
-        .eq('player_name', currentPlayer)
-        .maybeSingle();
-
-      if (!player || player.role !== 'impostor') {
-        redirectToHome();
-        return;
-      }
 
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
       if (settings && settings.crew_count) totalCrewCount = settings.crew_count;
@@ -338,6 +291,12 @@
 
       const { data: sessions } = await client.from('active_sessions').select('*');
       renderRadar(sessions || []);
+    }
+
+    function toggleTaskBreakdown() {
+      showBreakdown = !showBreakdown;
+      document.getElementById('taskBreakdownGrid').style.display = showBreakdown ? 'grid' : 'none';
+      document.getElementById('breakdownArrow').innerText = showBreakdown ? '▲' : '▼';
     }
 
     function renderTaskBreakdown(doneTasks) {
@@ -434,7 +393,7 @@
       if (!confirm(`¿Lanzar sabotaje: ${labels[sabId]}?`)) return;
 
       await client.from('sabotages').upsert({ id: sabId, active: true, started_at: new Date().toISOString(), fixed_by: null });
-      pollData();
+      verifyAndPoll();
     }
 
     async function reportBody() {
@@ -446,7 +405,7 @@
         reported_by: currentPlayer,
         started_at: new Date().toISOString()
       });
-      pollData();
+      verifyAndPoll();
     }
 
     function renderRadar(sessions) {
@@ -468,7 +427,29 @@
       });
     }
 
-    verifyImpostorAccess();
+    async function takeSession() {
+      await client.from('active_sessions').upsert({
+        task_name: TASK_ID,
+        player_name: `${currentPlayer}:::${mySessionToken}`,
+        last_heartbeat: new Date().toISOString()
+      });
+    }
+
+    async function releaseSession() {
+      if (heartbeatTimer) clearInterval(heartbeatTimer);
+      if (currentPlayer) {
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', `${currentPlayer}:::${mySessionToken}`);
+      }
+    }
+
+    window.addEventListener('beforeunload', releaseSession);
+    window.addEventListener('pagehide', releaseSession);
+
+    // Arranque
+    verifyAndPoll();
+    setInterval(verifyAndPoll, 1000);
+    setInterval(updateCooldownUI, 500);
+    heartbeatTimer = setInterval(takeSession, 3000);
   </script>
 </body>
 </html>
