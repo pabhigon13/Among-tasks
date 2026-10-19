@@ -295,6 +295,9 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl4Z3dkeGxwbHZ4dm5obnNna2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNDMzMDUsImV4cCI6MjEwNzkxOTMwNX0.qol-pxboTuyShUCVCjs5_qa0FJg5W-TONZjlSopuciQ';
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
+    // Identificador único de esta pestaña/dispositivo para evitar colisiones
+    const mySessionToken = 'DEV_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+
     let currentPlayer = '';
     let totalCrewCount = 4;
     let heartbeatTimer = null;
@@ -344,8 +347,7 @@
       currentPlayer = name;
       totalCrewCount = count;
 
-      await client.from('game_settings').upsert({ id: 'global', crew_count: totalCrewCount, updated_at: new Date().toISOString() });
-
+      // Consultar si ya existe una sesión activa en la terminal
       const { data: session } = await client
         .from('active_sessions')
         .select('*')
@@ -357,12 +359,12 @@
         const lastSeen = new Date(session.last_heartbeat).getTime();
         const secondsAgo = (now - lastSeen) / 1000;
 
-        // Si ya hay alguien conectado y no es la misma persona reconectando:
-        if (secondsAgo < 12 && session.player_name !== currentPlayer) {
+        // Si hay una sesión activa de menos de 12 segundos generada por otro token/dispositivo:
+        const sessionTokenInDb = session.player_name.split(':::')[1] || '';
+        if (secondsAgo < 12 && sessionTokenInDb !== mySessionToken) {
           document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
           document.getElementById('ovDesc').innerText = 'Canal exclusivo restringido';
           document.getElementById('busyAlert').style.display = 'block';
-          // Mensaje anónimo sin revelar el nombre del impostor
           document.getElementById('busyMsg').innerHTML = 'Este panel está siendo usado por el impostor.<br><b>Tú no lo eres</b>, ve a hacer tareas e investigar.';
           inputName.style.display = 'none';
           inputCount.style.display = 'none';
@@ -372,6 +374,7 @@
         }
       }
 
+      await client.from('game_settings').upsert({ id: 'global', crew_count: totalCrewCount, updated_at: new Date().toISOString() });
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
@@ -382,9 +385,10 @@
     }
 
     async function takeSession() {
+      // Guardamos NOMBRE:::TOKEN para validar sesión única por dispositivo sin mostrar el token al resto
       await client.from('active_sessions').upsert({
         task_name: TASK_ID,
-        player_name: currentPlayer,
+        player_name: `${currentPlayer}:::${mySessionToken}`,
         last_heartbeat: new Date().toISOString()
       });
     }
@@ -392,7 +396,7 @@
     async function releaseSession() {
       if (heartbeatTimer) clearInterval(heartbeatTimer);
       if (currentPlayer) {
-        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', currentPlayer);
+        await client.from('active_sessions').delete().eq('task_name', TASK_ID).eq('player_name', `${currentPlayer}:::${mySessionToken}`);
       }
     }
 
@@ -591,7 +595,7 @@
           const secondsAgo = (now - new Date(sess.last_heartbeat).getTime()) / 1000;
           if (secondsAgo < 12) {
             isOccupied = true;
-            occupant = sess.player_name;
+            occupant = sess.player_name.split(':::')[0];
           }
         }
 
