@@ -121,10 +121,11 @@
       margin-top: 3px;
       font-size: 0.65rem;
       font-weight: bold;
-      color: #a8a29e;
+      color: #cbd5e1;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      background: rgba(12, 10, 9, 0.75);
+      background: rgba(12, 10, 9, 0.85);
+      border: 1px solid rgba(251, 146, 60, 0.3);
       padding: 1px 5px;
       border-radius: 3px;
       white-space: nowrap;
@@ -186,11 +187,11 @@
 
   <div id="overlay">
     <h2 id="ovTitle" style="color: #fb923c;">IDENTIFÍCATE</h2>
-    <p id="ovDesc">Escribe tu nombre para empezar el viaje</p>
+    <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
     
     <div id="busyAlert" class="busy-box">
       <div style="font-size: 2rem; margin-bottom: 0.3rem;">⏳</div>
-      <strong style="color: #ef4444;">VEHÍCULO OCUPADO</strong>
+      <strong style="color: #ef4444;">TERMINAL OCUPADA</strong>
       <p id="busyMsg" style="font-size: 0.85rem; color: #cbd5e1; margin: 0.4rem 0 0 0;"></p>
     </div>
 
@@ -210,23 +211,17 @@
 
     <div id="waypointsContainer"></div>
 
-    <!-- Coche horizontal con orientación hacia el Este -->
+    <!-- Coche horizontal -->
     <div id="car">
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <!-- Chasis orientado hacia la derecha -->
         <rect x="16" y="24" width="68" height="52" rx="14" fill="#fb923c" stroke="#c2410c" stroke-width="4"/>
-        <!-- Ruedas -->
         <rect x="24" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
         <rect x="60" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
         <rect x="24" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
         <rect x="60" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
-        <!-- Parabrisas delantero (derecha) -->
         <path d="M 64 32 L 64 68 L 74 64 L 74 36 Z" fill="#0284c7"/>
-        <!-- Techo -->
         <rect x="38" y="33" width="24" height="34" rx="4" fill="#ea580c"/>
-        <!-- Parabrisas trasero (izquierda) -->
         <path d="M 36 34 L 36 66 L 30 63 L 30 37 Z" fill="#0284c7"/>
-        <!-- Luces delanteras -->
         <ellipse cx="81" cy="32" rx="2" ry="4" fill="#fef08a"/>
         <ellipse cx="81" cy="68" rx="2" ry="4" fill="#fef08a"/>
       </svg>
@@ -267,7 +262,7 @@
     function resetForm() {
       document.getElementById('ovTitle').innerText = 'IDENTIFÍCATE';
       document.getElementById('ovTitle').style.color = '#fb923c';
-      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar el viaje';
+      document.getElementById('ovDesc').innerText = 'Escribe tu nombre para empezar la tarea';
       document.getElementById('busyAlert').style.display = 'none';
       const input = document.getElementById('playerName');
       input.style.display = 'block';
@@ -293,9 +288,9 @@
         .eq('task_name', TASK_ID);
 
       if (doneData && doneData.length > 0) {
-        document.getElementById('ovTitle').innerText = 'VIAJE YA COMPLETADO';
+        document.getElementById('ovTitle').innerText = 'TAREA YA COMPLETADA';
         document.getElementById('ovTitle').style.color = '#ef4444';
-        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta ruta. Espera a que el admin la reinicie.`;
+        document.getElementById('ovDesc').innerText = `Hola ${currentPlayer}, ya completaste esta tarea. Espera a que el admin la reinicie.`;
         input.style.display = 'none';
         document.getElementById('btnStart').style.display = 'none';
         document.getElementById('btnRetry').style.display = 'block';
@@ -315,11 +310,11 @@
         const secondsAgo = (now - lastSeen) / 1000;
 
         if (secondsAgo < 12 && session.player_name !== currentPlayer) {
-          document.getElementById('ovTitle').innerText = 'VEHÍCULO OCUPADO';
+          document.getElementById('ovTitle').innerText = 'ACCESO DENEGADO';
           document.getElementById('ovTitle').style.color = '#ef4444';
-          document.getElementById('ovDesc').innerText = 'Solo puede conducir 1 persona a la vez.';
+          document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está al volante en este momento.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -328,7 +323,7 @@
         }
       }
 
-      // 3. Tomar posesión
+      // 3. Tomar turno
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
@@ -353,7 +348,6 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // Configuración y generación de ruta
     const gps = document.getElementById('gps');
     const car = document.getElementById('car');
     const svg = document.getElementById('mapSvg');
@@ -369,8 +363,7 @@
       currentStep = 1;
       isCompleted = false;
 
-      // Generar puntos de izquierda a derecha con altura Y aleatoria en los intermedios
-      // Rango Y entre 25% y 75% para que no toquen los bordes
+      // Puntos de izquierda a derecha con Y aleatoria en intermedios
       WAYPOINTS = [
         { x: 10, y: randomBetween(35, 65), name: 'Valencia',    icon: 'START' },
         { x: 36, y: randomBetween(25, 75), name: 'Buñol',       icon: '1' },
@@ -378,31 +371,43 @@
         { x: 90, y: randomBetween(35, 65), name: 'Minglanilla', icon: '🏁' }
       ];
 
-      // Carretera completa (fondo discontinua)
       let pathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i < WAYPOINTS.length; i++) {
         pathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
       }
-      const baseLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      baseLine.setAttribute('d', pathD);
-      baseLine.setAttribute('stroke', 'rgba(251, 146, 60, 0.25)');
-      baseLine.setAttribute('stroke-width', '4');
-      baseLine.setAttribute('stroke-dasharray', '8 6');
-      baseLine.setAttribute('fill', 'none');
-      svg.appendChild(baseLine);
 
-      // Línea sólida de tramos completados (en negrita)
+      // 1. Línea base tenue para asfalto
+      const darkRoad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      darkRoad.setAttribute('d', pathD);
+      darkRoad.setAttribute('stroke', '#292524');
+      darkRoad.setAttribute('stroke-width', '10');
+      darkRoad.setAttribute('stroke-linecap', 'round');
+      darkRoad.setAttribute('stroke-linejoin', 'round');
+      darkRoad.setAttribute('fill', 'none');
+      svg.appendChild(darkRoad);
+
+      // 2. Línea discontinua visible para guiar la ruta
+      const guideLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      guideLine.setAttribute('d', pathD);
+      guideLine.setAttribute('stroke', '#fdba74');
+      guideLine.setAttribute('stroke-width', '4');
+      guideLine.setAttribute('stroke-dasharray', '8 6');
+      guideLine.setAttribute('stroke-linecap', 'round');
+      guideLine.setAttribute('fill', 'none');
+      svg.appendChild(guideLine);
+
+      // 3. Línea sólida en negrita para tramos completados
       const boldLine = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       boldLine.id = 'boldRoad';
       boldLine.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
       boldLine.setAttribute('stroke', '#ea580c');
-      boldLine.setAttribute('stroke-width', '8');
+      boldLine.setAttribute('stroke-width', '10');
       boldLine.setAttribute('stroke-linecap', 'round');
       boldLine.setAttribute('stroke-linejoin', 'round');
       boldLine.setAttribute('fill', 'none');
       svg.appendChild(boldLine);
 
-      // Renderizar poblaciones
+      // Renderizar nodos
       WAYPOINTS.forEach((wp, idx) => {
         const node = document.createElement('div');
         node.className = 'waypoint-node';
@@ -442,24 +447,22 @@
       const pointerX = ((e.clientX - rect.left) / rect.width) * 100;
       const pointerY = ((e.clientY - rect.top) / rect.height) * 100;
 
-      const pA = WAYPOINTS[currentStep - 1]; // Origen del tramo
-      const pB = WAYPOINTS[currentStep];     // Destino del tramo
+      const pA = WAYPOINTS[currentStep - 1];
+      const pB = WAYPOINTS[currentStep];
 
-      // Proyección matemática sobre el segmento pA -> pB (efecto carril/raíl)
+      // Proyección matemática sobre el tramo actual
       const dx = pB.x - pA.x;
       const dy = pB.y - pA.y;
       const lenSq = dx * dx + dy * dy;
 
       let t = ((pointerX - pA.x) * dx + (pointerY - pA.y) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t)); // Confinar dentro del tramo
+      t = Math.max(0, Math.min(1, t));
 
-      // Posición fija sobre la línea
       const clampedX = pA.x + t * dx;
       const clampedY = pA.y + t * dy;
 
       setCarPos(clampedX, clampedY);
 
-      // Comprobar si llegó a la meta del tramo actual
       if (t >= 0.96) {
         reachWaypoint(currentStep);
       }
@@ -469,7 +472,7 @@
       if (!isDragging || isCompleted) return;
       isDragging = false;
 
-      // Si suelta antes de llegar, retrocede suavemente al inicio del tramo
+      // Si suelta antes, vuelve al inicio del tramo
       const prevWp = WAYPOINTS[currentStep - 1];
       car.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
       setCarPos(prevWp.x, prevWp.y);
@@ -484,7 +487,7 @@
       targetNode.classList.remove('target');
       targetNode.classList.add('reached');
 
-      // Actualizar carretera en negrita hasta este nodo
+      // Extender línea completada en negrita
       let boldD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
       for (let i = 1; i <= stepIdx; i++) {
         boldD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
@@ -493,13 +496,12 @@
 
       currentStep++;
 
-      // Meta final
       if (currentStep >= WAYPOINTS.length) {
         isCompleted = true;
         isDragging = false;
         setCarPos(WAYPOINTS[WAYPOINTS.length - 1].x, WAYPOINTS[WAYPOINTS.length - 1].y);
 
-        document.getElementById('status').innerText = '¡DESTINO ALCANZADO!';
+        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
         playBeep(820, 'sine', 0.4);
         if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
