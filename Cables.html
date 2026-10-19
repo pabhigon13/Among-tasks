@@ -28,19 +28,16 @@
       transition: transform 0.3s ease;
     }
 
-    /* Modificador para el sabotaje de controles invertidos */
     body.inverted-controls {
       transform: scaleX(-1);
       filter: hue-rotate(90deg);
     }
 
-    /* Banner flotante de Fuga de Gas Crítica */
+    /* Alerta superior de Fuga */
     #gasAlertBanner {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       background: #7f1d1d;
       border-bottom: 2px solid #ef4444;
       color: #fff;
@@ -55,7 +52,21 @@
       to { background: #b91c1c; }
     }
 
-    /* Capa de apagón de luces (bloquea toda interacción) */
+    /* Pantalla completa de Derrota por Gas a 0s */
+    #defeatOverlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    /* Pantalla de Luces Apagadas */
     #lightsBlackout {
       display: none;
       position: fixed;
@@ -111,12 +122,9 @@
 
     svg {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 1;
-      pointer-events: none;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1; pointer-events: none;
     }
     line {
       stroke-width: 8;
@@ -155,21 +163,29 @@
 </head>
 <body>
 
-  <!-- Alerta Fuga de Gas -->
+  <!-- Alerta Fuga -->
   <div id="gasAlertBanner">
-    ☣️ ¡FUGA DE GAS DETECTADA! TIEMPO RESTANTE: <span id="gasTimerSpan">--s</span>
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
   </div>
 
-  <!-- Pantalla Negra Sabotaje de Luces -->
+  <!-- Pantalla de Derrota (Gas a 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Pantalla Luces Apagadas -->
   <div id="lightsBlackout">
     <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
     <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
-      El impostor ha cortado la red eléctrica. Restaura los fusibles en la estación de electricidad para poder continuar.
+      Restaura los fusibles en la estación de electricidad para poder continuar.
     </p>
   </div>
 
-  <!-- Overlay de Identificación -->
   <div id="overlay">
     <h2 id="ovTitle">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -299,9 +315,8 @@
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
 
-      // Iniciar bucle de comprobación de sabotajes
       checkSabotages();
-      setInterval(checkSabotages, 2000);
+      setInterval(checkSabotages, 1500);
 
       initGame();
     }
@@ -324,9 +339,6 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    // ==========================================
-    // SISTEMA UNIVERSAL DE ESCUCHA DE SABOTAJES
-    // ==========================================
     async function checkSabotages() {
       const { data: sabs } = await client.from('sabotages').select('*');
       if (!sabs) return;
@@ -335,7 +347,7 @@
       const sabFuga = sabs.find(s => s.id === 'fuga');
       const sabControles = sabs.find(s => s.id === 'controles');
 
-      // 1. Sabotaje Luces
+      // 1. Luces
       const blackoutEl = document.getElementById('lightsBlackout');
       if (sabLuces && sabLuces.active) {
         blackoutEl.style.display = 'flex';
@@ -343,19 +355,28 @@
         blackoutEl.style.display = 'none';
       }
 
-      // 2. Sabotaje Fuga de Gas
+      // 2. Fuga de Gas (con Alerta y Derrota si llega a 0)
       const gasBanner = document.getElementById('gasAlertBanner');
       const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
+
       if (sabFuga && sabFuga.active) {
         gasBanner.style.display = 'block';
         const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
         gasTimerSpan.innerText = `${remaining}s`;
+
+        if (remaining === 0) {
+          defeatEl.style.display = 'flex';
+        } else {
+          defeatEl.style.display = 'none';
+        }
       } else {
         gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
       }
 
-      // 3. Sabotaje Invertir Controles
+      // 3. Controles
       if (sabControles && sabControles.active) {
         document.body.classList.add('inverted-controls');
       } else {
