@@ -8,12 +8,12 @@
   <style>
     body { background: #0f1117; color: #fff; font-family: sans-serif; text-align: center; padding: 1.5rem; margin: 0; }
     h1 { color: #f59e0b; margin-bottom: 0.2rem; }
-    .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.5rem; margin-top: 1.5rem; }
-    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 320px; padding: 1.3rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-    .counter { font-size: 2.8rem; font-weight: bold; margin: 0.3rem 0; }
-    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 160px; overflow-y: auto; }
+    .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 1.5rem; }
+    .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 290px; padding: 1.2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .counter { font-size: 2.6rem; font-weight: bold; margin: 0.3rem 0; }
+    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 150px; overflow-y: auto; }
     li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
-    .btn-reset { background: #ef4444; color: white; border: none; padding: 0.8rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
+    .btn-reset { background: #ef4444; color: white; border: none; padding: 0.7rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
     .btn-reset:active { background: #b91c1c; }
     .btn-all { background: #dc2626; color: white; border: none; padding: 1rem 2rem; border-radius: 10px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 2rem; }
     #statusInfo { font-size: 0.85rem; color: #22c55e; margin-top: 1rem; }
@@ -27,7 +27,7 @@
   <div class="grid">
     <!-- Cables -->
     <div class="card">
-      <h2 style="margin: 0; color: #f59e0b; font-size: 1.2rem;">⚡ Cables (Electricidad)</h2>
+      <h2 style="margin: 0; color: #f59e0b; font-size: 1.1rem;">⚡ Cables (Electricidad)</h2>
       <div id="countCables" class="counter" style="color: #22c55e;">0</div>
       <ul id="listCables"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('cables')">Reiniciar Cables</button>
@@ -35,7 +35,7 @@
 
     <!-- Números -->
     <div class="card">
-      <h2 style="margin: 0; color: #38bdf8; font-size: 1.2rem;">🔢 Números (Reactor)</h2>
+      <h2 style="margin: 0; color: #38bdf8; font-size: 1.1rem;">🔢 Números (Reactor)</h2>
       <div id="countNumeros" class="counter" style="color: #38bdf8;">0</div>
       <ul id="listNumeros"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('numeros')">Reiniciar Números</button>
@@ -43,10 +43,18 @@
 
     <!-- Simon Dice -->
     <div class="card">
-      <h2 style="margin: 0; color: #a855f7; font-size: 1.2rem;">🧠 Simon Dice (Reactor)</h2>
+      <h2 style="margin: 0; color: #a855f7; font-size: 1.1rem;">🧠 Simon Dice (Reactor)</h2>
       <div id="countSimon" class="counter" style="color: #a855f7;">0</div>
       <ul id="listSimon"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('simon')">Reiniciar Simon</button>
+    </div>
+
+    <!-- Conducción -->
+    <div class="card">
+      <h2 style="margin: 0; color: #fb923c; font-size: 1.1rem;">🚗 Conducción (A-3)</h2>
+      <div id="countCond" class="counter" style="color: #fb923c;">0</div>
+      <ul id="listCond"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
+      <button class="btn-reset" onclick="resetTask('conduccion')">Reiniciar Conducción</button>
     </div>
   </div>
 
@@ -69,6 +77,7 @@
       renderTask(data.filter(t => t.task_name === 'cables'), 'countCables', 'listCables');
       renderTask(data.filter(t => t.task_name === 'numeros'), 'countNumeros', 'listNumeros');
       renderTask(data.filter(t => t.task_name === 'simon'), 'countSimon', 'listSimon');
+      renderTask(data.filter(t => t.task_name === 'conduccion'), 'countCond', 'listCond');
     }
 
     function renderTask(items, countId, listId) {
