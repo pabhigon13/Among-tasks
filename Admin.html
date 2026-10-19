@@ -11,7 +11,7 @@
     .grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2rem; margin-top: 1.5rem; }
     .card { background: #1e2430; border: 2px solid #334155; border-radius: 12px; width: 100%; max-width: 260px; padding: 1.2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .counter { font-size: 2.5rem; font-weight: bold; margin: 0.3rem 0; }
-    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 140px; overflow-y: auto; }
+    ul { list-style: none; padding: 0; margin: 1rem 0; text-align: left; max-height: 130px; overflow-y: auto; }
     li { background: #2a3241; margin-bottom: 0.4rem; padding: 0.5rem 0.8rem; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
     .btn-reset { background: #ef4444; color: white; border: none; padding: 0.7rem; border-radius: 8px; font-weight: bold; cursor: pointer; width: 100%; }
     .btn-reset:active { background: #b91c1c; }
@@ -27,7 +27,7 @@
   <div class="grid">
     <!-- Cables -->
     <div class="card">
-      <h2 style="margin: 0; color: #f59e0b; font-size: 1.1rem;">⚡ Cables (Electricidad)</h2>
+      <h2 style="margin: 0; color: #f59e0b; font-size: 1.05rem;">⚡ Cables (Electricidad)</h2>
       <div id="countCables" class="counter" style="color: #22c55e;">0</div>
       <ul id="listCables"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('cables')">Reiniciar Cables</button>
@@ -35,7 +35,7 @@
 
     <!-- Números -->
     <div class="card">
-      <h2 style="margin: 0; color: #38bdf8; font-size: 1.1rem;">🔢 Números (Reactor)</h2>
+      <h2 style="margin: 0; color: #38bdf8; font-size: 1.05rem;">🔢 Números (Reactor)</h2>
       <div id="countNumeros" class="counter" style="color: #38bdf8;">0</div>
       <ul id="listNumeros"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('numeros')">Reiniciar Números</button>
@@ -43,7 +43,7 @@
 
     <!-- Simon Dice -->
     <div class="card">
-      <h2 style="margin: 0; color: #a855f7; font-size: 1.1rem;">🧠 Simon Dice (Reactor)</h2>
+      <h2 style="margin: 0; color: #a855f7; font-size: 1.05rem;">🧠 Simon Dice (Reactor)</h2>
       <div id="countSimon" class="counter" style="color: #a855f7;">0</div>
       <ul id="listSimon"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('simon')">Reiniciar Simon</button>
@@ -51,7 +51,7 @@
 
     <!-- Conducción -->
     <div class="card">
-      <h2 style="margin: 0; color: #fb923c; font-size: 1.1rem;">🚗 Conducción (A-3)</h2>
+      <h2 style="margin: 0; color: #fb923c; font-size: 1.05rem;">🚗 Conducción (A-3)</h2>
       <div id="countCond" class="counter" style="color: #fb923c;">0</div>
       <ul id="listCond"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('conduccion')">Reiniciar Conducción</button>
@@ -59,7 +59,7 @@
 
     <!-- DNI -->
     <div class="card">
-      <h2 style="margin: 0; color: #f43f5e; font-size: 1.1rem;">🪪 Pasar DNI (Admin)</h2>
+      <h2 style="margin: 0; color: #f43f5e; font-size: 1.05rem;">🪪 Pasar DNI (Admin)</h2>
       <div id="countDni" class="counter" style="color: #f43f5e;">0</div>
       <ul id="listDni"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('dni')">Reiniciar DNI</button>
@@ -67,7 +67,7 @@
 
     <!-- Operación -->
     <div class="card">
-      <h2 style="margin: 0; color: #a3e635; font-size: 1.1rem;">🧮 Operación (Cálculo)</h2>
+      <h2 style="margin: 0; color: #a3e635; font-size: 1.05rem;">🧮 Operación (Cálculo)</h2>
       <div id="countOp" class="counter" style="color: #a3e635;">0</div>
       <ul id="listOp"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('operacion')">Reiniciar Operación</button>
@@ -75,10 +75,18 @@
 
     <!-- Cascada -->
     <div class="card">
-      <h2 style="margin: 0; color: #e11d48; font-size: 1.1rem;">🍻 Cascada (Almacén)</h2>
-      <div id="countCascada" class="counter" style="color: #e11d48;">0</div>
+      <h2 style="margin: 0; color: #ff2a2a; font-size: 1.05rem;">🍻 Cascada (Almacén)</h2>
+      <div id="countCascada" class="counter" style="color: #ff2a2a;">0</div>
       <ul id="listCascada"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
       <button class="btn-reset" onclick="resetTask('cascada')">Reiniciar Cascada</button>
+    </div>
+
+    <!-- Cucarachas -->
+    <div class="card">
+      <h2 style="margin: 0; color: #d97706; font-size: 1.05rem;">🪳 Cucarachas (Cocina)</h2>
+      <div id="countCucarachas" class="counter" style="color: #d97706;">0</div>
+      <ul id="listCucarachas"><li style="color:#64748b; justify-content:center;">Cargando...</li></ul>
+      <button class="btn-reset" onclick="resetTask('cucarachas')">Reiniciar Cucarachas</button>
     </div>
   </div>
 
@@ -105,6 +113,7 @@
       renderTask(data.filter(t => t.task_name === 'dni'), 'countDni', 'listDni');
       renderTask(data.filter(t => t.task_name === 'operacion'), 'countOp', 'listOp');
       renderTask(data.filter(t => t.task_name === 'cascada'), 'countCascada', 'listCascada');
+      renderTask(data.filter(t => t.task_name === 'cucarachas'), 'countCucarachas', 'listCucarachas');
     }
 
     function renderTask(items, countId, listId) {
