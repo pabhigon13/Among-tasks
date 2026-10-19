@@ -13,7 +13,7 @@
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 1rem 0.8rem;
+      padding: 1rem 0.8rem 2.5rem 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -34,152 +34,64 @@
       gap: 1rem;
     }
 
-    /* Banners y overlays de alertas */
     #gasAlertBanner {
       display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      background: #7f1d1d;
-      border-bottom: 2px solid #ef4444;
-      color: #fff;
-      padding: 0.5rem;
-      font-size: 0.85rem;
-      font-weight: 900;
-      z-index: 80;
-      animation: alertPulse 1s infinite alternate;
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #7f1d1d; border-bottom: 2px solid #ef4444; color: #fff;
+      padding: 0.5rem; font-size: 0.85rem; font-weight: 900; z-index: 80;
     }
-    @keyframes alertPulse {
-      from { background: #7f1d1d; }
-      to { background: #b91c1c; }
-    }
-
     #defeatOverlay {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
-      z-index: 100;
-      color: #ef4444;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
+      position: fixed; inset: 0; background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100; color: #ef4444; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
-
     #lightsBlackout {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 90;
-      color: #ef4444;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
+      position: fixed; inset: 0; background: #000; z-index: 90;
+      color: #ef4444; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
-
     #meetingOverlay {
       display: none;
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
-      z-index: 110;
-      color: #fff;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 1.5rem;
+      position: fixed; inset: 0; background: radial-gradient(circle, #1e3a8a 0%, #030712 90%);
+      z-index: 110; color: #fff; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
 
-    /* Tarjetas de interfaz */
     .card {
-      background: #111827;
-      border: 2px solid #1f2937;
-      border-radius: 14px;
-      padding: 1rem;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-      text-align: left;
+      background: #111827; border: 2px solid #1f2937; border-radius: 14px;
+      padding: 1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.5); text-align: left;
     }
     .card-title {
-      font-size: 0.85rem;
-      font-weight: 900;
-      color: #38bdf8;
-      letter-spacing: 1px;
-      margin-bottom: 0.6rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      font-size: 0.85rem; font-weight: 900; color: #38bdf8; letter-spacing: 1px;
+      margin-bottom: 0.6rem; display: flex; justify-content: space-between; align-items: center;
     }
 
-    /* Lista de tareas */
-    .task-list {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .task-list { display: flex; flex-direction: column; gap: 6px; }
     .task-item {
-      background: #0b1120;
-      border: 1px solid #1e293b;
-      border-radius: 8px;
-      padding: 0.6rem 0.8rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.85rem;
+      background: #0b1120; border: 1px solid #1e293b; border-radius: 8px;
+      padding: 0.6rem 0.8rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;
     }
-    .task-item.done {
-      border-color: #22c55e;
-      background: rgba(34, 197, 94, 0.1);
-    }
-    .task-badge {
-      font-weight: bold;
-      font-size: 0.75rem;
-      padding: 2px 6px;
-      border-radius: 4px;
-    }
+    .task-item.done { border-color: #22c55e; background: rgba(34, 197, 94, 0.1); }
+    .task-badge { font-weight: bold; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; }
     .badge-pending { color: #fbbf24; background: #451a03; }
     .badge-done { color: #86efac; background: #14532d; }
 
-    /* Barra de progreso */
     .progress-track {
-      width: 100%;
-      height: 12px;
-      background: #000;
-      border-radius: 6px;
-      overflow: hidden;
-      margin-top: 0.4rem;
-      border: 1px solid #1e293b;
+      width: 100%; height: 12px; background: #000; border-radius: 6px;
+      overflow: hidden; margin-top: 0.4rem; border: 1px solid #1e293b;
     }
-    .progress-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, #38bdf8, #22c55e);
-      transition: width 0.3s ease;
-    }
+    .progress-fill { height: 100%; width: 0%; transition: width 0.3s ease; }
+    .fill-personal { background: linear-gradient(90deg, #38bdf8, #0284c7); }
+    .fill-global { background: linear-gradient(90deg, #10b981, #22c55e); box-shadow: 0 0 10px #22c55e; }
 
-    /* Botón de reporte */
     .btn-report {
-      width: 100%;
-      padding: 1.1rem;
+      width: 100%; padding: 1.1rem;
       background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%);
-      color: #fff;
-      font-size: 1.2rem;
-      font-weight: 900;
-      letter-spacing: 2px;
-      border: 3px solid #f87171;
-      border-radius: 14px;
-      cursor: pointer;
+      color: #fff; font-size: 1.2rem; font-weight: 900; letter-spacing: 2px;
+      border: 3px solid #f87171; border-radius: 14px; cursor: pointer;
       box-shadow: 0 6px 0 #450a0a, 0 10px 20px rgba(220, 38, 38, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
     }
-    .btn-report:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #450a0a;
-    }
+    .btn-report:active { transform: translateY(4px); box-shadow: 0 2px 0 #450a0a; }
 
     #overlayName {
       position: fixed; inset: 0; background: #090e17; z-index: 120;
@@ -197,12 +109,10 @@
 </head>
 <body>
 
-  <!-- Alerta Fuga de Gas -->
   <div id="gasAlertBanner">
     ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
   </div>
 
-  <!-- Pantalla Derrota (Gas 0s) -->
   <div id="defeatOverlay">
     <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
@@ -211,26 +121,23 @@
     </p>
   </div>
 
-  <!-- Apagón de Luces -->
   <div id="lightsBlackout">
     <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
     <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
     <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
-      Restaura los fusibles en la estación de electricidad para poder continuar.
+      Restaura los fusibles en la estación de electricidad para continuar.
     </p>
   </div>
 
-  <!-- Alerta de Reunión en curso -->
   <div id="meetingOverlay">
     <div style="font-size: 4rem; margin-bottom: 0.5rem;">📢🚨</div>
     <h1 style="color: #facc15; margin: 0 0 0.5rem 0; letter-spacing: 2px;">¡CADÁVER REPORTADO!</h1>
     <p id="meetingReporter" style="color: #93c5fd; font-size: 1.1rem; margin: 0 0 1rem 0; font-weight: bold;"></p>
     <p style="color: #e2e8f0; font-size: 0.95rem; max-width: 280px; margin: 0;">
-      Todos los jugadores deben reunirse de inmediato en la mesa central para debatir y votar.
+      Acude a la mesa central de inmediato para debatir y votar quién es el impostor.
     </p>
   </div>
 
-  <!-- Overlay por si entra directo sin pasar por el lobby -->
   <div id="overlayName">
     <h2 style="color: #38bdf8; margin-bottom: 0.4rem;">IDENTIFÍCATE</h2>
     <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.2rem;">Introduce tu nombre de tripulante</p>
@@ -244,14 +151,26 @@
       <p id="playerGreeting" style="margin: 0.2rem 0 0 0; color: #94a3b8; font-size: 0.85rem;">Cargando identidad...</p>
     </div>
 
-    <!-- Progreso individual de este tripulante -->
+    <!-- Progreso Global de toda la tripulación -->
+    <div class="card" style="border-color: #065f46;">
+      <div class="card-title">
+        <span style="color: #34d399;">PROGRESO TOTAL DE TRIPULACIÓN</span>
+        <span id="globalProgressText" style="color: #34d399;">0%</span>
+      </div>
+      <div class="progress-track" style="border-color: #064e3b;">
+        <div class="progress-fill fill-global" id="globalProgressBar"></div>
+      </div>
+      <div id="globalCountLabel" style="font-size: 0.72rem; color: #94a3b8; margin-top: 0.35rem;">Cargando...</div>
+    </div>
+
+    <!-- Progreso Personal -->
     <div class="card">
       <div class="card-title">
-        <span>MIS TAREAS ASIGNADAS</span>
-        <span id="personalProgressText" style="color: #22c55e;">0 / 8</span>
+        <span>MIS TAREAS INDIVIDUALES</span>
+        <span id="personalProgressText" style="color: #38bdf8;">0 / 8</span>
       </div>
       <div class="progress-track">
-        <div class="progress-fill" id="personalProgressBar"></div>
+        <div class="progress-fill fill-personal" id="personalProgressBar"></div>
       </div>
     </div>
 
@@ -259,7 +178,7 @@
     <div class="card">
       <div class="card-title">
         <span>ESTADO DE TAREAS</span>
-        <span style="font-size: 0.7rem; color: #94a3b8;">SE ACTUALIZA SOLO</span>
+        <span style="font-size: 0.7rem; color: #94a3b8;">AUTO-ACTUALIZABLE</span>
       </div>
       <div class="task-list" id="myTasksList"></div>
     </div>
@@ -282,6 +201,7 @@
     const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentPlayer = localStorage.getItem('among_player_name') || '';
+    let totalCrewCount = 4;
 
     const ALL_TASKS = [
       { id: 'cables', name: '⚡ Conectar Cables' },
@@ -293,21 +213,6 @@
       { id: 'cascada', name: '🍻 Cascada' },
       { id: 'cucarachas', name: '🪳 Aplastar Cucarachas' }
     ];
-
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
-      if (audioCtx.state === 'suspended') audioCtx.resume();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = type;
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
-    }
 
     if (currentPlayer) {
       document.getElementById('overlayName').style.display = 'none';
@@ -330,22 +235,31 @@
     }
 
     async function pollData() {
-      // 1. Tareas completadas por este jugador
-      const { data: doneTasks } = await client
-        .from('completed_tasks')
-        .select('*')
-        .eq('player_name', currentPlayer);
+      const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
+      if (settings && settings.crew_count) totalCrewCount = settings.crew_count;
 
-      const doneSet = new Set((doneTasks || []).map(t => t.task_name));
-      renderTasks(doneSet);
+      // 1. Tareas completadas totales y personales
+      const { data: allDone } = await client.from('completed_tasks').select('*');
+      if (allDone) {
+        // Global
+        const maxTasks = totalCrewCount * ALL_TASKS.length;
+        const totalCompleted = allDone.length;
+        const globalPct = Math.min(100, Math.round((totalCompleted / maxTasks) * 100));
+        document.getElementById('globalProgressBar').style.width = `${globalPct}%`;
+        document.getElementById('globalProgressText').innerText = `${globalPct}%`;
+        document.getElementById('globalCountLabel').innerText = `${totalCompleted}/${maxTasks} tareas completadas en total`;
 
-      // 2. Comprobar sabotajes
-      const { data: sabs } = await client.from('sabotages').select('*');
-      if (sabs) {
-        checkSabotages(sabs);
+        // Personal
+        const myDone = allDone.filter(t => t.player_name === currentPlayer);
+        const mySet = new Set(myDone.map(t => t.task_name));
+        renderTasks(mySet);
       }
 
-      // 3. Comprobar reunión de emergencia / cadáver reportado
+      // 2. Sabotajes
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (sabs) checkSabotages(sabs);
+
+      // 3. Reunión
       const { data: meeting } = await client.from('game_meetings').select('*').eq('id', 'current').maybeSingle();
       const meetingOverlay = document.getElementById('meetingOverlay');
 
@@ -360,7 +274,6 @@
     function renderTasks(doneSet) {
       const list = document.getElementById('myTasksList');
       list.innerHTML = '';
-
       let completedCount = 0;
 
       ALL_TASKS.forEach(t => {
@@ -388,10 +301,8 @@
       const sabFuga = sabs.find(s => s.id === 'fuga');
       const sabControles = sabs.find(s => s.id === 'controles');
 
-      // Luces
       document.getElementById('lightsBlackout').style.display = (sabLuces && sabLuces.active) ? 'flex' : 'none';
 
-      // Fuga de gas
       const gasBanner = document.getElementById('gasAlertBanner');
       const gasTimerSpan = document.getElementById('gasTimerSpan');
       const defeatEl = document.getElementById('defeatOverlay');
@@ -401,14 +312,12 @@
         const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
         const remaining = Math.max(0, 45 - elapsed);
         gasTimerSpan.innerText = `${remaining}s`;
-
         defeatEl.style.display = (remaining === 0) ? 'flex' : 'none';
       } else {
         gasBanner.style.display = 'none';
         defeatEl.style.display = 'none';
       }
 
-      // Controles
       if (sabControles && sabControles.active) {
         document.body.classList.add('inverted-controls');
       } else {
@@ -417,19 +326,14 @@
     }
 
     async function reportBody() {
-      const ok = confirm('¿Confirmas que has encontrado un cadáver y quieres convocar una reunión de emergencia?');
-      if (!ok) return;
-
-      playBeep(880, 'sawtooth', 0.5);
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
-
+      if (!confirm('¿Reportar cadáver y convocar reunión?')) return;
+      await client.from('sabotages').update({ active: false }).neq('id', '');
       await client.from('game_meetings').upsert({
         id: 'current',
         active: true,
         reported_by: currentPlayer,
         started_at: new Date().toISOString()
       });
-
       pollData();
     }
   </script>
