@@ -3,167 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Transporte: Conducción en Ruta</title>
+  <title>Navegación: Conducción</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * {
       box-sizing: border-box;
-      touch-action: none;
+      touch-action: manipulation;
       -webkit-user-select: none;
       user-select: none;
     }
     body {
-      background: #0b0d10;
+      background: #090e17;
       color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       text-align: center;
       margin: 0;
-      padding: 0.8rem;
+      padding: 1rem 0.8rem;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      overflow-x: hidden;
-    }
-    h2 { margin: 0 0 0.2rem 0; color: #fb923c; letter-spacing: 2px; font-size: 1.3rem; }
-    p { margin: 0 0 0.8rem 0; color: #94a3b8; font-size: 0.85rem; }
-
-    /* Marco panorámico horizontal */
-    .gps-frame {
-      position: relative;
-      background: radial-gradient(circle at center, #14161a 0%, #090a0d 80%, #000 100%);
-      border: 4px solid #ea580c;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 680px;
-      height: 290px;
       overflow: hidden;
-      box-shadow: inset 0 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(234, 88, 12, 0.25);
+      transition: transform 0.3s ease;
     }
 
-    .gps-grid {
-      position: absolute;
-      inset: 0;
-      background-image: 
-        linear-gradient(rgba(251, 146, 60, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(251, 146, 60, 0.05) 1px, transparent 1px);
-      background-size: 26px 26px;
-      pointer-events: none;
+    body.inverted-controls {
+      transform: scaleX(-1);
+      filter: hue-rotate(90deg);
     }
 
-    .route-badge {
-      position: absolute;
-      top: 10px;
-      left: 12px;
-      background: #ea580c;
+    #gasAlertBanner {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: #7f1d1d;
+      border-bottom: 2px solid #ef4444;
       color: #fff;
+      padding: 0.5rem;
+      font-size: 0.85rem;
       font-weight: 900;
-      font-size: 0.65rem;
-      padding: 2px 7px;
-      border-radius: 4px;
-      letter-spacing: 1px;
-      z-index: 4;
+      z-index: 80;
+      animation: alertPulse 1s infinite alternate;
     }
-    .compass {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      font-size: 0.75rem;
-      color: #78716c;
-      font-weight: bold;
-      z-index: 4;
+    @keyframes alertPulse {
+      from { background: #7f1d1d; }
+      to { background: #b91c1c; }
     }
 
-    svg#mapSvg {
-      position: absolute;
+    #defeatOverlay {
+      display: none;
+      position: fixed;
       inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 2;
+      background: radial-gradient(circle, #2e0814 0%, #080104 90%);
+      z-index: 100;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
     }
 
-    .waypoint-node {
-      position: absolute;
-      transform: translate(-50%, -50%);
+    #lightsBlackout {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 90;
+      color: #ef4444;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    h2 { margin: 0 0 0.2rem 0; color: #fb923c; letter-spacing: 2px; }
+    p { margin: 0 0 1rem 0; color: #94a3b8; font-size: 0.9rem; }
+
+    .game-cabinet {
+      background: #131c2e;
+      border: 4px solid #1e293b;
+      border-radius: 20px;
+      padding: 1rem;
+      width: 100%;
+      max-width: 350px;
+      box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 12px 30px rgba(0,0,0,0.6);
       display: flex;
       flex-direction: column;
       align-items: center;
-      z-index: 5;
-      pointer-events: none;
+      gap: 12px;
     }
-    .waypoint-dot {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #1c1917;
-      border: 2px dashed #fb923c;
+
+    canvas {
+      background: #050811;
+      border: 2px solid #334155;
+      border-radius: 12px;
+      width: 100%;
+      max-width: 320px;
+      height: 280px;
+      display: block;
+    }
+
+    .controls-deck {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 10px;
+    }
+    .ctrl-btn {
+      flex: 1;
+      height: 52px;
+      background: #1e293b;
+      border: 2px solid #475569;
+      border-radius: 10px;
+      color: #fb923c;
+      font-size: 1.6rem;
+      font-weight: bold;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 0.8rem;
-      color: #fdba74;
-      transition: all 0.2s ease;
-      box-shadow: 0 0 6px rgba(0,0,0,0.8);
+      box-shadow: 0 4px 0 #0f172a;
     }
-    .waypoint-node.reached .waypoint-dot {
-      background: #ea580c;
-      border-style: solid;
-      color: #fff;
-      box-shadow: 0 0 14px #fb923c;
-    }
-    .waypoint-node.target .waypoint-dot {
-      border-color: #facc15;
-      color: #fef08a;
-      animation: pulseTarget 1s infinite alternate;
-    }
-    .waypoint-label {
-      margin-top: 3px;
-      font-size: 0.65rem;
-      font-weight: bold;
-      color: #cbd5e1;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      background: rgba(12, 10, 9, 0.9);
-      border: 1px solid rgba(251, 146, 60, 0.4);
-      padding: 1px 5px;
-      border-radius: 3px;
-      white-space: nowrap;
+    .ctrl-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #0f172a;
+      background: #334155;
     }
 
-    @keyframes pulseTarget {
-      from { transform: scale(1); box-shadow: 0 0 4px #facc15; }
-      to { transform: scale(1.18); box-shadow: 0 0 14px #facc15; }
+    .progress-bar-container {
+      width: 100%;
+      height: 10px;
+      background: #050811;
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid #334155;
     }
-
-    /* Coche */
-    #car {
-      position: absolute;
-      width: 44px;
-      height: 44px;
-      transform: translate(-50%, -50%);
-      z-index: 10;
-      cursor: grab;
-      filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.9));
-    }
-    #car:active {
-      cursor: grabbing;
-      filter: drop-shadow(0 0 16px rgba(251, 146, 60, 1));
+    .progress-bar-fill {
+      width: 0%;
+      height: 100%;
+      background: #fb923c;
+      transition: width 0.1s linear;
     }
 
     #status {
-      margin-top: 1rem;
+      margin-top: 0.6rem;
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.15rem;
       color: #22c55e;
-      min-height: 1.6rem;
-      letter-spacing: 1px;
+      min-height: 1.5rem;
     }
 
-    /* Capa de inicio y bloqueo */
     #overlay {
-      position: fixed; inset: 0; background: #0b0d10; z-index: 50;
+      position: fixed; inset: 0; background: #090e17; z-index: 50;
       display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem;
     }
     .overlay-input {
@@ -171,7 +163,7 @@
       color: #fff; width: 80%; max-width: 250px; text-align: center; font-size: 1rem;
     }
     .overlay-btn {
-      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #ea580c; color: #fff;
+      margin-top: 1rem; padding: 0.8rem 1.5rem; background: #fb923c; color: #000;
       border: none; border-radius: 8px; font-weight: bold; cursor: pointer;
     }
     .btn-retry {
@@ -186,6 +178,30 @@
 </head>
 <body>
 
+  <!-- Alerta Fuga de Gas -->
+  <div id="gasAlertBanner">
+    ☣️ ¡FUGA DE GAS! TIEMPO: <span id="gasTimerSpan">--s</span>
+  </div>
+
+  <!-- Pantalla Derrota (Gas 0s) -->
+  <div id="defeatOverlay">
+    <div style="font-size: 3.5rem; margin-bottom: 0.5rem;">☠️💀</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0; letter-spacing: 2px;">DERROTA</h1>
+    <p style="color: #cbd5e1; font-size: 1rem; max-width: 280px; margin: 0;">
+      Todos los tripulantes han sido intoxicados. El impostor gana la partida.
+    </p>
+  </div>
+
+  <!-- Apagón de Luces -->
+  <div id="lightsBlackout">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">💡❌</div>
+    <h1 style="color: #ef4444; margin: 0 0 0.5rem 0;">LUCES APAGADAS</h1>
+    <p style="color: #cbd5e1; font-size: 0.95rem; max-width: 280px; margin: 0;">
+      Restaura los fusibles en la estación de electricidad para poder continuar.
+    </p>
+  </div>
+
+  <!-- Overlay Identificación -->
   <div id="overlay">
     <h2 id="ovTitle" style="color: #fb923c;">IDENTIFÍCATE</h2>
     <p id="ovDesc">Escribe tu nombre para empezar la tarea</p>
@@ -201,31 +217,19 @@
     <button id="btnRetry" class="btn-retry" onclick="resetForm()">Intentar con otro nombre</button>
   </div>
 
-  <h2>CONDUCCIÓN</h2>
-  <p>Arrastra el coche por la carretera: Valencia ➔ Buñol ➔ Utiel ➔ Minglanilla</p>
+  <h2>NAVEGACIÓN: CONDUCCIÓN</h2>
+  <p>Esquiva los asteroides y mantén la nave en curso</p>
 
-  <div class="gps-frame" id="gps">
-    <div class="route-badge">AUTOVÍA A-3</div>
-    <div class="compass">E ▶</div>
-    <div class="gps-grid"></div>
-    <svg id="mapSvg"></svg>
+  <div class="game-cabinet">
+    <canvas id="gameCanvas" width="300" height="260"></canvas>
+    
+    <div class="progress-bar-container">
+      <div class="progress-bar-fill" id="flightProgress"></div>
+    </div>
 
-    <div id="waypointsContainer"></div>
-
-    <!-- Coche horizontal -->
-    <div id="car">
-      <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <rect x="16" y="24" width="68" height="52" rx="14" fill="#fb923c" stroke="#c2410c" stroke-width="4"/>
-        <rect x="24" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
-        <rect x="60" y="16" width="16" height="8" rx="3" fill="#1c1917"/>
-        <rect x="24" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
-        <rect x="60" y="76" width="16" height="8" rx="3" fill="#1c1917"/>
-        <path d="M 64 32 L 64 68 L 74 64 L 74 36 Z" fill="#0284c7"/>
-        <rect x="38" y="33" width="24" height="34" rx="4" fill="#ea580c"/>
-        <path d="M 36 34 L 36 66 L 30 63 L 30 37 Z" fill="#0284c7"/>
-        <ellipse cx="81" cy="32" rx="2" ry="4" fill="#fef08a"/>
-        <ellipse cx="81" cy="68" rx="2" ry="4" fill="#fef08a"/>
-      </svg>
+    <div class="controls-deck">
+      <button class="ctrl-btn" onpointerdown="moveShip(-1)">◀</button>
+      <button class="ctrl-btn" onpointerdown="moveShip(1)">▶</button>
     </div>
   </div>
 
@@ -240,19 +244,28 @@
     let currentPlayer = '';
     let heartbeatTimer = null;
 
-    let WAYPOINTS = [];
-    let currentStep = 1;
-    let isDragging = false;
-    let isCompleted = false;
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const FLIGHT_DURATION = 15; // 15 segundos de vuelo
+    let shipX = 135;
+    const shipY = 215;
+    const shipWidth = 30;
+    const shipHeight = 30;
+    let asteroids = [];
+    let elapsedTime = 0;
+    let gameLoopId = null;
+    let isGameRunning = false;
+    let isTaskDone = false;
 
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    function playBeep(freq = 440, type = 'sine', duration = 0.15) {
+    function playBeep(freq = 440, type = 'sine', duration = 0.08) {
       if (audioCtx.state === 'suspended') audioCtx.resume();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
       osc.type = type;
       osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -313,7 +326,7 @@
           document.getElementById('ovTitle').style.color = '#ef4444';
           document.getElementById('ovDesc').innerText = 'Solo puede realizarla 1 tripulante a la vez.';
           document.getElementById('busyAlert').style.display = 'block';
-          document.getElementById('busyMsg').innerText = `${session.player_name} está usando este panel ahora mismo.`;
+          document.getElementById('busyMsg').innerText = `${session.player_name} está haciendo esta tarea ahora mismo.`;
           input.style.display = 'none';
           document.getElementById('btnStart').innerText = 'Comprobar si quedó libre';
           document.getElementById('btnStart').style.display = 'block';
@@ -325,7 +338,11 @@
       await takeSession();
       document.getElementById('overlay').style.display = 'none';
       heartbeatTimer = setInterval(takeSession, 3000);
-      initNavigation();
+
+      checkSabotages();
+      setInterval(checkSabotages, 1500);
+
+      startFlightGame();
     }
 
     async function takeSession() {
@@ -346,179 +363,175 @@
     window.addEventListener('beforeunload', releaseSession);
     window.addEventListener('pagehide', releaseSession);
 
-    const gps = document.getElementById('gps');
-    const car = document.getElementById('car');
-    const svg = document.getElementById('mapSvg');
-    const wpContainer = document.getElementById('waypointsContainer');
+    async function checkSabotages() {
+      const { data: sabs } = await client.from('sabotages').select('*');
+      if (!sabs) return;
 
-    function randomBetween(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+      const sabLuces = sabs.find(s => s.id === 'luces');
+      const sabFuga = sabs.find(s => s.id === 'fuga');
+      const sabControles = sabs.find(s => s.id === 'controles');
 
-    function initNavigation() {
-      wpContainer.innerHTML = '';
-      svg.innerHTML = '';
-      currentStep = 1;
-      isCompleted = false;
-
-      // Puntos con alturas aleatorias
-      WAYPOINTS = [
-        { x: 10, y: randomBetween(35, 65), name: 'Valencia',    icon: 'START' },
-        { x: 36, y: randomBetween(25, 75), name: 'Buñol',       icon: '1' },
-        { x: 64, y: randomBetween(25, 75), name: 'Utiel',       icon: '2' },
-        { x: 90, y: randomBetween(35, 65), name: 'Minglanilla', icon: '🏁' }
-      ];
-
-      let fullPathD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
-      for (let i = 1; i < WAYPOINTS.length; i++) {
-        fullPathD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
+      const blackoutEl = document.getElementById('lightsBlackout');
+      if (sabLuces && sabLuces.active) {
+        blackoutEl.style.display = 'flex';
+      } else {
+        blackoutEl.style.display = 'none';
       }
 
-      // --- DIBUJO DE LA CARRETERA REAL ---
-      // 1. Bordillo exterior oscuro
-      const roadCurb = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      roadCurb.setAttribute('d', fullPathD);
-      roadCurb.setAttribute('stroke', '#44403c');
-      roadCurb.setAttribute('stroke-width', '24');
-      roadCurb.setAttribute('stroke-linecap', 'round');
-      roadCurb.setAttribute('stroke-linejoin', 'round');
-      roadCurb.setAttribute('fill', 'none');
-      svg.appendChild(roadCurb);
+      const gasBanner = document.getElementById('gasAlertBanner');
+      const gasTimerSpan = document.getElementById('gasTimerSpan');
+      const defeatEl = document.getElementById('defeatOverlay');
 
-      // 2. Asfalto gris oscuro de la calzada
-      const roadAsphalt = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      roadAsphalt.setAttribute('d', fullPathD);
-      roadAsphalt.setAttribute('stroke', '#1c1917');
-      roadAsphalt.setAttribute('stroke-width', '20');
-      roadAsphalt.setAttribute('stroke-linecap', 'round');
-      roadAsphalt.setAttribute('stroke-linejoin', 'round');
-      roadAsphalt.setAttribute('fill', 'none');
-      svg.appendChild(roadAsphalt);
+      if (sabFuga && sabFuga.active) {
+        gasBanner.style.display = 'block';
+        const elapsed = Math.floor((Date.now() - new Date(sabFuga.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+        gasTimerSpan.innerText = `${remaining}s`;
 
-      // 3. Carretera iluminada (tramos completados)
-      const boldRoad = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      boldRoad.id = 'boldRoad';
-      boldRoad.setAttribute('d', `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`);
-      boldRoad.setAttribute('stroke', '#ea580c');
-      boldRoad.setAttribute('stroke-width', '20');
-      boldRoad.setAttribute('stroke-linecap', 'round');
-      boldRoad.setAttribute('stroke-linejoin', 'round');
-      boldRoad.setAttribute('fill', 'none');
-      svg.appendChild(boldRoad);
+        if (remaining === 0) {
+          defeatEl.style.display = 'flex';
+        } else {
+          defeatEl.style.display = 'none';
+        }
+      } else {
+        gasBanner.style.display = 'none';
+        defeatEl.style.display = 'none';
+      }
 
-      // 4. Líneas divisorias de carril (pintura central blanca/amarilla discontinua)
-      const roadDashes = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      roadDashes.setAttribute('d', fullPathD);
-      roadDashes.setAttribute('stroke', '#fef08a');
-      roadDashes.setAttribute('stroke-width', '2');
-      roadDashes.setAttribute('stroke-dasharray', '8 8');
-      roadDashes.setAttribute('stroke-linecap', 'butt');
-      roadDashes.setAttribute('fill', 'none');
-      svg.appendChild(roadDashes);
+      if (sabControles && sabControles.active) {
+        document.body.classList.add('inverted-controls');
+      } else {
+        document.body.classList.remove('inverted-controls');
+      }
+    }
 
-      // Renderizar nodos de las ciudades
-      WAYPOINTS.forEach((wp, idx) => {
-        const node = document.createElement('div');
-        node.className = 'waypoint-node';
-        node.id = `node-${idx}`;
-        node.style.left = `${wp.x}%`;
-        node.style.top = `${wp.y}%`;
+    function moveShip(dir) {
+      if (!isGameRunning || isTaskDone) return;
+      shipX += dir * 28;
+      shipX = Math.max(10, Math.min(260, shipX));
+      playBeep(300, 'sine', 0.04);
+    }
 
-        node.innerHTML = `
-          <div class="waypoint-dot">${wp.icon}</div>
-          <div class="waypoint-label">${wp.name}</div>
-        `;
+    // Soporte teclado físico (flechas izquierda/derecha)
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') moveShip(-1);
+      if (e.key === 'ArrowRight') moveShip(1);
+    });
 
-        if (idx === 0) node.classList.add('reached');
-        if (idx === 1) node.classList.add('target');
-        wpContainer.appendChild(node);
+    function startFlightGame() {
+      shipX = 135;
+      asteroids = [];
+      elapsedTime = 0;
+      isGameRunning = true;
+      isTaskDone = false;
+
+      let lastTime = performance.now();
+      let spawnCounter = 0;
+
+      function update(currentTime) {
+        if (!isGameRunning) return;
+
+        const dt = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+        elapsedTime += dt;
+
+        const progressPct = Math.min(100, (elapsedTime / FLIGHT_DURATION) * 100);
+        document.getElementById('flightProgress').style.width = `${progressPct}%`;
+
+        // Generar asteroides periódicamente
+        spawnCounter += dt;
+        if (spawnCounter > 0.75) {
+          spawnCounter = 0;
+          asteroids.push({
+            x: Math.random() * 260 + 10,
+            y: -25,
+            size: Math.random() * 12 + 16,
+            speed: Math.random() * 60 + 130
+          });
+        }
+
+        // Actualizar asteroides
+        for (let i = asteroids.length - 1; i >= 0; i--) {
+          const a = asteroids[i];
+          a.y += a.speed * dt;
+
+          // Colisión con la nave
+          if (
+            shipX < a.x + a.size &&
+            shipX + shipWidth > a.x &&
+            shipY < a.y + a.size &&
+            shipY + shipHeight > a.y
+          ) {
+            // Impacto: reinicia el temporizador de vuelo
+            playBeep(130, 'sawtooth', 0.25);
+            if (navigator.vibrate) navigator.vibrate(200);
+            elapsedTime = Math.max(0, elapsedTime - 3.5); // Penalización
+            asteroids.splice(i, 1);
+            continue;
+          }
+
+          if (a.y > 280) asteroids.splice(i, 1);
+        }
+
+        render();
+
+        if (elapsedTime >= FLIGHT_DURATION) {
+          finishTask();
+          return;
+        }
+
+        gameLoopId = requestAnimationFrame(update);
+      }
+
+      gameLoopId = requestAnimationFrame(update);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Dibujar estrellas de fondo
+      ctx.fillStyle = '#1e293b';
+      for (let i = 0; i < 15; i++) {
+        const sx = (i * 47) % canvas.width;
+        const sy = (i * 73 + (elapsedTime * 60)) % canvas.height;
+        ctx.fillRect(sx, sy, 2, 2);
+      }
+
+      // Dibujar asteroides
+      ctx.fillStyle = '#78716c';
+      ctx.strokeStyle = '#a8a29e';
+      ctx.lineWidth = 2;
+      asteroids.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x + a.size / 2, a.y + a.size / 2, a.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
       });
 
-      setCarPos(WAYPOINTS[0].x, WAYPOINTS[0].y);
+      // Dibujar nave espacial
+      ctx.fillStyle = '#fb923c';
+      ctx.beginPath();
+      ctx.moveTo(shipX + shipWidth / 2, shipY);
+      ctx.lineTo(shipX + shipWidth, shipY + shipHeight);
+      ctx.lineTo(shipX + shipWidth / 2, shipY + shipHeight - 6);
+      ctx.lineTo(shipX, shipY + shipHeight);
+      ctx.closePath();
+      ctx.fill();
+
+      // Propulsor
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(shipX + shipWidth / 2 - 3, shipY + shipHeight - 4, 6, 8);
     }
 
-    function setCarPos(xPercent, yPercent) {
-      car.style.left = `${xPercent}%`;
-      car.style.top = `${yPercent}%`;
-    }
+    async function finishTask() {
+      isGameRunning = false;
+      isTaskDone = true;
+      document.getElementById('status').innerText = '¡RUMBO COMPLETADO!';
+      playBeep(880, 'sine', 0.4);
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
 
-    car.addEventListener('pointerdown', (e) => {
-      if (isCompleted) return;
-      isDragging = true;
-      car.setPointerCapture(e.pointerId);
-      car.style.transition = 'none';
-      playBeep(380, 'sine', 0.1);
-    });
-
-    window.addEventListener('pointermove', (e) => {
-      if (!isDragging || isCompleted) return;
-      const rect = gps.getBoundingClientRect();
-      const pointerX = ((e.clientX - rect.left) / rect.width) * 100;
-      const pointerY = ((e.clientY - rect.top) / rect.height) * 100;
-
-      const pA = WAYPOINTS[currentStep - 1];
-      const pB = WAYPOINTS[currentStep];
-
-      // Proyección matemática sobre el carril actual
-      const dx = pB.x - pA.x;
-      const dy = pB.y - pA.y;
-      const lenSq = dx * dx + dy * dy;
-
-      let t = ((pointerX - pA.x) * dx + (pointerY - pA.y) * dy) / lenSq;
-      t = Math.max(0, Math.min(1, t));
-
-      const clampedX = pA.x + t * dx;
-      const clampedY = pA.y + t * dy;
-
-      setCarPos(clampedX, clampedY);
-
-      if (t >= 0.96) {
-        reachWaypoint(currentStep);
-      }
-    });
-
-    window.addEventListener('pointerup', () => {
-      if (!isDragging || isCompleted) return;
-      isDragging = false;
-
-      // Si suelta antes de la meta, vuelve al inicio del tramo
-      const prevWp = WAYPOINTS[currentStep - 1];
-      car.style.transition = 'left 0.25s ease-out, top 0.25s ease-out';
-      setCarPos(prevWp.x, prevWp.y);
-      setTimeout(() => car.style.transition = 'none', 260);
-    });
-
-    async function reachWaypoint(stepIdx) {
-      playBeep(450 + (stepIdx * 90), 'triangle', 0.2);
-      if (navigator.vibrate) navigator.vibrate(60);
-
-      const targetNode = document.getElementById(`node-${stepIdx}`);
-      targetNode.classList.remove('target');
-      targetNode.classList.add('reached');
-
-      // Iluminar tramo de carretera completado
-      let boldD = `M ${WAYPOINTS[0].x}% ${WAYPOINTS[0].y}%`;
-      for (let i = 1; i <= stepIdx; i++) {
-        boldD += ` L ${WAYPOINTS[i].x}% ${WAYPOINTS[i].y}%`;
-      }
-      document.getElementById('boldRoad').setAttribute('d', boldD);
-
-      currentStep++;
-
-      if (currentStep >= WAYPOINTS.length) {
-        isCompleted = true;
-        isDragging = false;
-        setCarPos(WAYPOINTS[WAYPOINTS.length - 1].x, WAYPOINTS[WAYPOINTS.length - 1].y);
-
-        document.getElementById('status').innerText = '¡TAREA COMPLETADA!';
-        playBeep(820, 'sine', 0.4);
-        if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-
-        await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
-        await releaseSession();
-      } else {
-        document.getElementById(`node-${currentStep}`).classList.add('target');
-      }
+      await client.from('completed_tasks').insert([{ player_name: currentPlayer, task_name: TASK_ID }]);
+      await releaseSession();
     }
   </script>
 </body>
