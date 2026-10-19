@@ -10,7 +10,26 @@
     h1 { color: #f59e0b; margin: 0 0 0.2rem 0; font-size: 1.8rem; letter-spacing: 2px; }
     .subtitle { color: #64748b; font-size: 0.85rem; margin-bottom: 1.5rem; }
 
-    .admin-container { max-width: 1150px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+    .admin-container { max-width: 1150px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.2rem; }
+
+    /* Banner no invasivo de fin de partida en Admin */
+    #adminVictoryBanner {
+      display: none;
+      background: linear-gradient(90deg, #991b1b, #dc2626);
+      border: 2px solid #f87171;
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      font-weight: 900;
+      font-size: 1.05rem;
+      letter-spacing: 1px;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(220, 38, 38, 0.4);
+      animation: bannerPulse 1.2s infinite alternate;
+    }
+    @keyframes bannerPulse {
+      from { opacity: 0.9; }
+      to { opacity: 1; transform: scale(1.01); }
+    }
 
     .overview-card {
       background: #161b26; border: 2px solid #334155; border-radius: 14px; padding: 1.2rem;
@@ -88,6 +107,12 @@
 
   <div class="admin-container">
 
+    <!-- Banner informativo discreto cuando el gas llega a 0 -->
+    <div id="adminVictoryBanner">
+      ☠️ FIN DE PARTIDA: VICTORIA DEL IMPOSTOR (FUGA DE GAS NO SELLADA)
+    </div>
+
+    <!-- Progreso Global -->
     <div class="overview-card">
       <div class="overview-header">
         <div>
@@ -204,7 +229,7 @@
 
     <div>
       <button class="btn-all" onclick="resetAll()">REINICIAR TODA LA PARTIDA</button>
-      <div style="font-size: 0.8rem; color: #22c55e; margin-top: 0.8rem;">Conectado a Supabase en tiempo real (3s)</div>
+      <div style="font-size: 0.8rem; color: #22c55e; margin-top: 0.8rem;">Conectado a Supabase en tiempo real</div>
     </div>
 
   </div>
@@ -237,7 +262,6 @@
     }
 
     async function loadAll() {
-      // 0. Cargar número de tripulantes compartido de Supabase
       const { data: settings } = await client.from('game_settings').select('*').eq('id', 'global').maybeSingle();
       if (settings && settings.crew_count) {
         crewCount = settings.crew_count;
@@ -247,7 +271,6 @@
         }
       }
 
-      // 1. Tareas completadas
       const { data: doneData } = await client.from('completed_tasks').select('*').order('completed_at', { ascending: false });
 
       if (doneData) {
@@ -264,11 +287,9 @@
         document.getElementById('tasksSummaryText').innerText = `${totalCompleted}/${totalTasksPossible} tareas completadas (${crewCount} tripulantes)`;
       }
 
-      // 2. Sesiones
       const { data: sessions } = await client.from('active_sessions').select('*');
       renderRadarAndSessions(sessions || []);
 
-      // 3. Sabotajes
       const { data: sabs } = await client.from('sabotages').select('*');
       renderSabotages(sabs || []);
     }
@@ -337,8 +358,35 @@
 
     function renderSabotages(sabs) {
       updateSabPill('luces', 'pillLuces', 'statusLuces', sabs);
-      updateSabPill('fuga', 'pillFuga', 'statusFuga', sabs);
+      updateFugaPill(sabs);
       updateSabPill('controles', 'pillControles', 'statusControles', sabs);
+    }
+
+    function updateFugaPill(sabs) {
+      const sab = sabs.find(s => s.id === 'fuga');
+      const pill = document.getElementById('pillFuga');
+      const label = document.getElementById('statusFuga');
+      const banner = document.getElementById('adminVictoryBanner');
+
+      if (sab && sab.active) {
+        pill.classList.add('active');
+        const elapsed = Math.floor((Date.now() - new Date(sab.started_at).getTime()) / 1000);
+        const remaining = Math.max(0, 45 - elapsed);
+
+        label.innerText = `⚠️ ACTIVO (${remaining}s)`;
+        label.style.color = '#ef4444';
+
+        if (remaining === 0) {
+          banner.style.display = 'block';
+        } else {
+          banner.style.display = 'none';
+        }
+      } else {
+        pill.classList.remove('active');
+        label.innerText = 'Normal';
+        label.style.color = '#64748b';
+        banner.style.display = 'none';
+      }
     }
 
     function updateSabPill(id, pillId, statusId, sabs) {
@@ -380,7 +428,7 @@
     }
 
     loadAll();
-    setInterval(loadAll, 3000);
+    setInterval(loadAll, 1000);
   </script>
 </body>
 </html>
